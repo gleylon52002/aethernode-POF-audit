@@ -134,6 +134,23 @@ export default function SettingsPage() {
             ))}
           </select>
         </Row>
+        <Row label="Varsayılan tarayıcı">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await window.aether.app.setAsDefault();
+                if (res) alert('AetherNode varsayılan tarayıcı olarak ayarlandı!');
+                else alert('Ayarlama başarısız oldu veya zaten varsayılan.');
+              } catch {
+                alert('Bir hata oluştu.');
+              }
+            }}
+            className="h-9 rounded-lg border border-white/10 bg-bg-elevated/60 px-4 text-sm font-medium hover:bg-white/5 active:bg-white/10 transition"
+          >
+            Varsayılan Yap
+          </button>
+        </Row>
         <Row label="Bellek tasarrufu">
           <Switch
             checked={settings.general.memorySaver}

@@ -184,7 +184,7 @@ export default function Downloads() {
                           className="rounded-md border border-amber-500/30 px-2.5 py-1 text-xs text-amber-300 hover:bg-amber-500/10"
                           title="VirusTotal ile kontrol (harici)"
                           onClick={() => {
-                            const q = encodeURIComponent(d.filename);
+                            const q = d.sha256 ? d.sha256 : encodeURIComponent(d.url);
                             openTab(`https://www.virustotal.com/gui/search/${q}`);
                           }}
                         >

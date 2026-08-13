@@ -11,6 +11,7 @@ export const IPC = {
     ready: 'aethernode/app/ready',
     version: 'aethernode/app/version',
     platform: 'aethernode/app/platform',
+    setAsDefault: 'aethernode/app/setAsDefault',
     quit: 'aethernode/app/quit',
   },
   // Pencere yönetimi

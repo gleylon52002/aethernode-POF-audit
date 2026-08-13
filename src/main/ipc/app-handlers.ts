@@ -26,6 +26,18 @@ export function registerAppHandlers(): void {
     },
   });
 
+  defineHandler({
+    channel: IPC.app.setAsDefault,
+    schema: noPayload,
+    handle: () => {
+      if (process.platform === 'win32') {
+        const success = app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
+        return success;
+      }
+      return app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
+    },
+  });
+
   // isDev bilgisini renderer'a güvenli şekilde ver.
   defineHandler({
     channel: 'aethernode/app/isDev',

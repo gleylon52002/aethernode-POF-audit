@@ -60,6 +60,7 @@ export function createMainWindow(): BrowserWindow {
       nodeIntegration: false,
       webviewTag: true,
       webSecurity: true,
+      plugins: true,
       allowRunningInsecureContent: false,
       spellcheck: false,
       devTools: is.dev,

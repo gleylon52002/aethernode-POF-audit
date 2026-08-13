@@ -37,7 +37,7 @@ export function PermissionPopup() {
       {requests.map((req) => (
         <div
           key={req.id}
-          className="flex flex-col gap-3 rounded-lg border border-border/50 bg-bg-layer/95 p-4 shadow-xl backdrop-blur-md"
+          className="flex flex-col gap-3 rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl text-zinc-100"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
@@ -46,8 +46,8 @@ export function PermissionPopup() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-text-base">{req.origin}</p>
-              <p className="text-xs text-text-muted">
+              <p className="text-sm font-medium">{req.origin}</p>
+              <p className="text-xs text-zinc-400">
                 {PERMISSION_LABELS[req.permission] || req.permission} kullanmak istiyor
               </p>
             </div>
@@ -57,7 +57,7 @@ export function PermissionPopup() {
               variant="ghost"
               size="sm"
               onClick={() => handleRespond(req.id, false)}
-              className="text-text-muted hover:text-text-base"
+              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
             >
               Reddet
             </Button>
@@ -65,6 +65,7 @@ export function PermissionPopup() {
               variant="default"
               size="sm"
               onClick={() => handleRespond(req.id, true)}
+              className="bg-brand hover:bg-brand/90 text-white"
             >
               İzin Ver
             </Button>

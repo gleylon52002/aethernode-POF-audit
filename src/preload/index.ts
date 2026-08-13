@@ -27,6 +27,7 @@ const api = {
     platform: () => invoke<string>(IPC.app.platform),
     quit: () => invoke<boolean>(IPC.app.quit),
     isDev: () => invoke<boolean>('aethernode/app/isDev'),
+    setAsDefault: () => invoke<boolean>(IPC.app.setAsDefault),
   },
   window: {
     minimize: () => invoke<boolean>(IPC.window.minimize),

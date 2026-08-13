@@ -47,6 +47,16 @@ function harden(ses: Session): void {
       callback(false);
     }
   });
+
+  // Aygıt seçme (kamera, mikrofon) için ek olarak:
+  ses.setDevicePermissionHandler(() => true);
+  ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === 'media') {
+      return true; // Asıl yetki setPermissionRequestHandler'dan alınacak
+    }
+    return false;
+  });
+
   try {
     ses.setSpellCheckerEnabled(false);
   } catch {

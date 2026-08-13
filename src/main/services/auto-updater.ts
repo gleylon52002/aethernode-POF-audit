@@ -8,12 +8,17 @@ let started = false;
 let updateReady = false;
 
 /**
- * Generic sunucu: https://aethernode.com/updates/latest.yml + NSIS exe
+ * Generic sunucu: https://aethernodevpn.com/updates/latest.yml + NSIS exe
  * İndirme arka planda; yalnızca indirildiyse çıkışta kurulum.
  */
 export function startAutoUpdater(): void {
   if (started || is.dev || !app.isPackaged) return;
   started = true;
+
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: 'https://aethernodevpn.com/updates/',
+  });
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

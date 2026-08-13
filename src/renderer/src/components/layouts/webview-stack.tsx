@@ -416,6 +416,8 @@ function TabWebview({
       // Chromium PDF eklentisi + PWA izinleri
       // eslint-disable-next-line react/no-unknown-property
       webpreferences="contextIsolation=yes,plugins=yes,javascript=yes,webSecurity=yes"
+      // eslint-disable-next-line react/no-unknown-property
+      plugins="true"
       {...(userAgent ? { useragent: userAgent } : {})}
       style={style}
     />

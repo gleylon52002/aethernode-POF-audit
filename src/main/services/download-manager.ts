@@ -336,7 +336,11 @@ export function openDownloadFolder(id?: string): boolean {
   if (id) {
     const cur = records.find((r) => r.id === id);
     if (cur?.path && existsSync(cur.path)) {
-      shell.showItemInFolder(cur.path);
+      // Windows Gezgini için path normalizasyonu
+      const normalizedPath = process.platform === 'win32' 
+        ? require('path').win32.normalize(cur.path)
+        : cur.path;
+      shell.showItemInFolder(normalizedPath);
       return true;
     }
   }

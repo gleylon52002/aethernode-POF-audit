@@ -225,17 +225,20 @@ export function AddressBar() {
       if (out.filter((s) => s.kind === 'history').length >= 4) break;
     }
 
-    if (isUrl(q)) {
-      const url = /^https?:\/\//i.test(q) ? q : `https://${q}`;
-      out.push({ kind: 'url', label: url, url, subtitle: 'Adrese git' });
+    const trimmedInput = value.trim();
+    if (isUrl(trimmedInput)) {
+      const url = /^https?:\/\//i.test(trimmedInput) ? trimmedInput : `https://${trimmedInput}`;
+      // URL eşleşmesini en üste al
+      out.unshift({ kind: 'url', label: url, url, subtitle: 'Adrese git' });
+    } else {
+      // Arama eşleşmesini en üste al
+      out.unshift({
+        kind: 'search',
+        label: `"${trimmedInput}" ara`,
+        url: (SEARCH_URLS[engine] ?? SEARCH_URLS.duckduckgo)(trimmedInput),
+        subtitle: engine,
+      });
     }
-
-    out.push({
-      kind: 'search',
-      label: `"${value.trim()}" ara`,
-      url: (SEARCH_URLS[engine] ?? SEARCH_URLS.duckduckgo)(value.trim()),
-      subtitle: engine,
-    });
 
     return out.slice(0, 10);
   }, [focused, value, tabs, bookmarks, history, engine]);
