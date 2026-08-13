@@ -30,11 +30,17 @@ export function registerAppHandlers(): void {
     channel: IPC.app.setAsDefault,
     schema: noPayload,
     handle: () => {
-      if (process.platform === 'win32') {
-        const success = app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
-        return success;
-      }
-      return app.setAsDefaultProtocolClient('http') && app.setAsDefaultProtocolClient('https');
+      import('electron').then(({ shell }) => {
+        if (process.platform === 'win32') {
+          app.setAsDefaultProtocolClient('http');
+          app.setAsDefaultProtocolClient('https');
+          shell.openExternal('ms-settings:defaultapps');
+        } else {
+          app.setAsDefaultProtocolClient('http');
+          app.setAsDefaultProtocolClient('https');
+        }
+      });
+      return true;
     },
   });
 
