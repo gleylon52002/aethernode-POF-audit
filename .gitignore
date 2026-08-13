@@ -2,9 +2,15 @@ node_modules
 dist
 dist-electron
 release
+SecureBrowser
+.aether-backup
 *.log
 .DS_Store
 .env
 .env.local
 coverage
 .vite
+telemetry-panel/config.php
+telemetry-panel/*.pem
+telemetry-panel/.sessions/
+telemetry-panel/.totp_secret

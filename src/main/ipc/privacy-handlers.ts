@@ -2,7 +2,7 @@ import { net, session, ipcMain } from 'electron';
 import { defineHandler, noPayload } from '@main/ipc/router';
 import { IPC } from '@shared/constants';
 import { historyRepo, settingsRepo } from '@main/store';
-import { GUEST_PARTITIONS, getAllPartitions, networkGuard, filterStats } from '@main/network';
+import { getAllPartitions, networkGuard, filterStats } from '@main/network';
 import { logger } from '@main/utils/logger';
 import type { FingerprintConfig, LeakTestResult, PrivacyConfig } from '@shared/types/privacy';
 import { z } from 'zod';

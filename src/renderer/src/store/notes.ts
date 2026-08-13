@@ -13,9 +13,10 @@ interface NotesState {
   selectedId: string | null;
   load: () => Promise<void>;
   add: (title: string, body: string) => Promise<boolean>;
-  update: (id: string, patch: { title?: string; body?: string }) => Promise<boolean>;
+  update: (id: string, patch: Partial<Pick<SecureNote, 'title' | 'body' | 'pinned' | 'color' | 'tags'>>) => Promise<boolean>;
   remove: (id: string) => Promise<boolean>;
   select: (id: string | null) => void;
+  togglePin: (id: string) => Promise<boolean>;
 }
 
 export const useNotes = create<NotesState>((set, get) => ({
@@ -84,4 +85,10 @@ export const useNotes = create<NotesState>((set, get) => ({
   },
 
   select: (id) => set({ selectedId: id }),
+
+  togglePin: async (id) => {
+    const note = get().notes.find((n) => n.id === id);
+    if (!note) return false;
+    return get().update(id, { pinned: !note.pinned });
+  },
 }));

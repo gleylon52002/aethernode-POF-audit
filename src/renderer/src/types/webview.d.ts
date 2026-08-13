@@ -23,6 +23,15 @@ export interface WebviewEventMap {
   'will-download': Event & { item?: WebviewDownloadItem };
   'dom-ready': Event;
   'found-in-page': Event & { result: WebviewFoundInPageResult };
+  'media-started-playing': Event;
+  'media-paused': Event;
+  'did-fail-load': Event & {
+    errorCode: number;
+    errorDescription: string;
+    validatedURL: string;
+    isMainFrame: boolean;
+  };
+  'ipc-message': Event & { channel: string; args: unknown[] };
 }
 
 export interface WebviewDownloadItem {
@@ -64,6 +73,10 @@ export interface WebviewElement extends HTMLElement {
   capturePage(): Promise<{ toDataURL(): string; toPNG(): Uint8Array; isEmpty(): boolean }>;
   executeJavaScript<T = unknown>(code: string, userGesture?: boolean): Promise<T>;
   insertCSS(css: string): Promise<string>;
+  setAudioMuted(muted: boolean): void;
+  isAudioMuted(): boolean;
+  isCurrentlyAudible?(): boolean;
+  getWebContentsId(): number;
 }
 
 declare global {

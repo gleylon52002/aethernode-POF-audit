@@ -1,7 +1,4 @@
-// Güvenlik merkezi tipleri — Aşama 6.
-//
-// scan ve permission audit için sözleşme. LeakTestResult privacy.ts'de zaten
-// tanımlı; burada security scan/audit tiplerini topluyoruz.
+// Güvenlik merkezi tipleri.
 
 export type Severity = 'info' | 'low' | 'medium' | 'high';
 
@@ -34,21 +31,13 @@ export interface BreachInfo {
   reference?: string;
 }
 
-// Yerel "bilinen ihlal" kayıtları — AetherNode HIBP API'si olmadığı için
-// statik bilgilendirme amaçlı. Aşama 6 sonrası dinamik bir feed eklenebilir.
+/** Geriye dönük sabit; runtime tarama security-handlers.localBreachHints kullanır. */
 export const KNOWN_BREACHES: BreachInfo[] = [
   {
-    id: 'collection-1',
-    title: 'Yaygın parola listeleri',
+    id: 'local-check',
+    title: 'Yerel parola kontrolü',
     summary:
-      'AetherNode, kayıtlı parolalarınızı yerel olarak "Have I Been Pwned" benzeri popüler liste (top1k/top10k) ile karşılaştırır. Ağ çağrısı yapmaz.',
-    severity: 'low',
-  },
-  {
-    id: 'reused',
-    title: 'Yeniden kullanım tespiti',
-    summary:
-      'Aynı parolanın birden fazla sitede kullanılıp kullanılmadığı yerel olarak işaretlenir.',
-    severity: 'medium',
+      'Parolalar dışarıya gönderilmez. Kasa açıkken yaygın parola ve yeniden kullanım yerelde taranır.',
+    severity: 'info',
   },
 ];

@@ -32,7 +32,7 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron/main',
             rollupOptions: {
-              external: ['electron', 'electron-store'],
+              external: ['electron', 'electron-store', 'electron-updater', 'argon2'],
             },
           },
         },
@@ -79,7 +79,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV === 'development',
     rollupOptions: {
       input: { index: resolve(__dirname, 'src/renderer/index.html') },
     },

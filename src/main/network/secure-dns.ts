@@ -11,15 +11,26 @@ import type { AppSettings } from '@shared/types/settings';
 // desteklenmediği için 'dot' modu da DoH şablonuna düşer — kullanıcıya
 // arayüzde belirtilir.
 
+// Birincil sunucu erişilemezse denenecek yedek DoH sunucuları.
+const FALLBACK_DOH = [
+  'https://cloudflare-dns.com/dns-query',
+  'https://dns.google/dns-query',
+  'https://dns.quad9.net/dns-query',
+];
+
 export function applySecureDns(settings: AppSettings): void {
   const dns = settings.privacy.dns;
   try {
     if (dns.enabled && dns.mode !== 'off' && dns.dohUrl) {
+      const servers = [dns.dohUrl, ...FALLBACK_DOH.filter((s) => s !== dns.dohUrl)];
+      // 'automatic': DoH öncelikli, sunucular yanıt vermezse sistem çözücüsüne
+      // düşer — 'secure' katı modu tek sunucu arızasında TÜM siteleri
+      // kilitliyordu (ERR_EMPTY_RESPONSE / ERR_NAME_NOT_RESOLVED dalgaları).
       app.configureHostResolver({
-        secureDnsMode: 'secure',
-        secureDnsServers: [dns.dohUrl],
+        secureDnsMode: 'automatic',
+        secureDnsServers: servers,
       });
-      logger.info(`Secure DNS aktif: ${dns.dohUrl}`);
+      logger.info(`Secure DNS aktif (fallback'li): ${servers.join(', ')}`);
     } else {
       app.configureHostResolver({ secureDnsMode: 'automatic', secureDnsServers: [] });
       logger.info('Secure DNS kapalı (sistem çözücüsü)');

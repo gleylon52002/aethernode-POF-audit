@@ -11,6 +11,7 @@ import {
   addEntry,
   updateEntry,
   removeEntry,
+  resetVaultIdleTimer,
   type EntryInput,
   type EntryPatch,
 } from '@main/services/vault';
@@ -47,7 +48,7 @@ export function registerPasswordHandlers(): void {
   defineHandler({
     channel: IPC.passwords.unlock,
     schema: z.object({ password: z.string().min(1) }),
-    handle: ({ password }): VaultStatus => vaultUnlock(password),
+    handle: async ({ password }): Promise<VaultStatus> => vaultUnlock(password),
   });
 
   defineHandler({
@@ -59,26 +60,35 @@ export function registerPasswordHandlers(): void {
   defineHandler({
     channel: IPC.passwords.list,
     schema: noPayload,
-    handle: (): PasswordEntry[] => listEntries(),
+    handle: async (): Promise<PasswordEntry[]> => listEntries(),
   });
 
   defineHandler({
     channel: IPC.passwords.add,
     schema: z.object({ entry: entrySchema }),
-    handle: ({ entry }): PasswordEntry => addEntry(entry as EntryInput),
+    handle: async ({ entry }): Promise<PasswordEntry> => addEntry(entry as EntryInput),
   });
 
   defineHandler({
     channel: IPC.passwords.update,
     schema: z.object({ id: z.string().min(1), patch: patchSchema }),
-    handle: ({ id, patch }): PasswordEntry => updateEntry(id, patch as EntryPatch),
+    handle: async ({ id, patch }): Promise<PasswordEntry> => updateEntry(id, patch as EntryPatch),
   });
 
   defineHandler({
     channel: IPC.passwords.remove,
     schema: z.object({ id: z.string().min(1) }),
-    handle: ({ id }): boolean => {
-      removeEntry(id);
+    handle: async ({ id }): Promise<boolean> => {
+      await removeEntry(id);
+      return true;
+    },
+  });
+
+  defineHandler({
+    channel: IPC.passwords.touchIdle,
+    schema: noPayload,
+    handle: (): boolean => {
+      resetVaultIdleTimer();
       return true;
     },
   });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Dialog, Input, Switch } from '@renderer/components/ui';
 import { Key, Lock as LockIcon } from '@renderer/components/ui/icons';
 import { usePasswords } from '@renderer/store/passwords';
+import { showToast } from '@renderer/components/layouts/toast-bus';
 import type { PasswordEntry } from '@shared/types/passwords';
 
 // Şifre Yöneticisi — Aşama 6.
@@ -97,6 +98,7 @@ function VaultOpen() {
 
   const [query, setQuery] = useState('');
   const [editor, setEditor] = useState<{ open: boolean; entry?: PasswordEntry }>({ open: false });
+  const [showGen, setShowGen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -120,6 +122,9 @@ function VaultOpen() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant={showGen ? 'brand' : 'outline'} size="sm" onClick={() => setShowGen((v) => !v)}>
+            {showGen ? 'Üretici Kapat' : 'Parola Üretici'}
+          </Button>
           <Button variant="brand" size="sm" onClick={() => setEditor({ open: true })}>
             + Yeni
           </Button>
@@ -128,6 +133,10 @@ function VaultOpen() {
           </Button>
         </div>
       </header>
+
+      {showGen && (
+        <PasswordGenerator />
+      )}
 
       <Input
         value={query}
@@ -295,6 +304,71 @@ function EntryEditor({
         </Field>
       </div>
     </Dialog>
+  );
+}
+
+function PasswordGenerator() {
+  const [len, setLen] = useState(16);
+  const [upper, setUpper] = useState(true);
+  const [lower, setLower] = useState(true);
+  const [numbers, setNumbers] = useState(true);
+  const [symbols, setSymbols] = useState(false);
+  const [pwd, setPwd] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const charset = useMemo(() => {
+    let s = '';
+    if (lower) s += 'abcdefghijklmnopqrstuvwxyz';
+    if (upper) s += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (numbers) s += '0123456789';
+    if (symbols) s += '!@#$%^&*_-+=[]{}|:;<>?';
+    return s;
+  }, [upper, lower, numbers, symbols]);
+
+  const generate = () => {
+    if (!charset) return;
+    const arr = new Uint32Array(len);
+    window.crypto.getRandomValues(arr);
+    let out = '';
+    for (let i = 0; i < len; i++) out += charset[arr[i]! % charset.length]!;
+    setPwd(out);
+  };
+
+  useEffect(() => { generate(); }, [len, charset]);
+
+  const copy = async () => {
+    if (!pwd) return;
+    try {
+      await navigator.clipboard.writeText(pwd);
+      setCopied(true);
+      showToast('Kopyalandı', 'success', 1500);
+      setTimeout(() => setCopied(false), 1300);
+    } catch {
+      showToast('Kopyalanamadı', 'error');
+    }
+  };
+
+  return (
+    <div className="glass mb-4 rounded-2xl p-4">
+      <h3 className="mb-3 text-sm font-semibold">Parola Üretici</h3>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-xs text-fg-muted">Uzunluk: {len}</span>
+        <input type="range" min={8} max={64} value={len} onChange={(e) => setLen(Number(e.target.value))} className="flex-1 accent-brand" />
+      </div>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={upper} onChange={(e) => setUpper(e.target.checked)} className="accent-brand" /> Büyük harf</label>
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={lower} onChange={(e) => setLower(e.target.checked)} className="accent-brand" /> Küçük harf</label>
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={numbers} onChange={(e) => setNumbers(e.target.checked)} className="accent-brand" /> Rakam</label>
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={symbols} onChange={(e) => setSymbols(e.target.checked)} className="accent-brand" /> Sembol</label>
+      </div>
+      {charset.length === 0 && <p className="mb-2 text-xs text-amber-300">En az bir karakter türü seçin.</p>}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 truncate rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm">{pwd || '—'}</div>
+        <Button variant="outline" size="sm" onClick={generate}>Yeniden Üret</Button>
+        <Button variant="brand" size="sm" onClick={() => void copy()}>{copied ? '✓ Kopyalandı' : 'Kopyala'}</Button>
+      </div>
+      <p className="mt-2 text-[11px] text-fg-subtle">Üretilen parola hiçbir yere otomatik kaydedilmez — yalnızca ekranda gösterilir.</p>
+    </div>
   );
 }
 

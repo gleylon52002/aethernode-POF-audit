@@ -2,10 +2,6 @@ import { BrowserWindow, Menu, shell } from 'electron';
 import { is } from '@main/utils/env';
 import { APP } from '@shared/constants/app';
 
-// Uygulama menüsü. Klavye hızlandırıcıları standart masaüstü uygulama
-// gelenekleriyle uyumludur. Menü, renderer'a IPC göndermeden doğrudan
-// pencere yönetimini çağırır; uzun vadeli işlemler (ayarlar) için
-// ayrı IPC handler'ları kullanılabilir.
 export function buildAppMenu(_win: BrowserWindow): Menu {
   const template: Electron.MenuItemConstructorOptions[] = [
     {

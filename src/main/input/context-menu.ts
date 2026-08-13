@@ -91,6 +91,8 @@ export function attachWebviewContextMenu(contents: WebContents): void {
       },
     });
 
+    template.push({ type: 'separator' });
+
     template.push({
       label: 'İncele',
       click: () => {

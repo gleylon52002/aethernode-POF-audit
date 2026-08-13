@@ -5,18 +5,22 @@ import { useSettings } from '@renderer/store/settings';
 import type { AppSettings } from '@shared/types/settings';
 import type { DnsConfig, PrivacyConfig, WebRtcConfig } from '@shared/types/privacy';
 
-// Gizlilik — Aşama 6.
-//
-// settings.privacy'nin tüm alt alanlarını (Fingerprint / WebRTC / DNS / HTTPS /
-// Tracker / Cookie) okur ve `apply(settings)` ile geri yazar. Aşama 6 notu:
-// bu toggle'lar ayara yazılır; gerçek webRequest enforcement (fingerprint
-// spoofing, tracker/reklam engelleme, DoH çözümleme, HTTPS upgrade) sonraki
-// Aşama 6b'de networkGuard ve session-defaults'a uygulanacak.
+// Gizlilik ayarları — toggle'lar settings'e yazılır ve anında uygulanır:
+// networkGuard, DoH, guest fingerprint, cookie guard, bank mode, çıkış temizliği.
 
 const WEBRTC_POLICIES: Array<{ value: WebRtcConfig['policy']; label: string }> = [
-  { value: 'disable_non_proxied_udp', label: 'Proxied olmayan UDP trafiğini devre dışı bırak' },
-  { value: 'force_proxy', label: 'Tüm trafiği proxy üzerinden zorla' },
-  { value: 'block_all', label: 'WebRTC trafiğini tamamen engelle' },
+  {
+    value: 'block_all',
+    label: 'Tam engel (önerilen) — STUN yok, IP sızmaz',
+  },
+  {
+    value: 'disable_non_proxied_udp',
+    label: 'UDP kısıtla + STUN engelle (uyumluluk)',
+  },
+  {
+    value: 'force_proxy',
+    label: 'Yalnızca genel arayüz (proxy ile kullan)',
+  },
 ];
 
 const DNS_MODES: Array<{ value: DnsConfig['mode']; label: string }> = [
@@ -54,7 +58,7 @@ export default function PrivacyPage() {
         <h1 className="text-xl font-semibold">Gizlilik</h1>
       </header>
 
-      <Section title="Fingerprint" description="Tarayıcı parmak izini rastgeleleştirme.">
+      <Section title="Fingerprint" description="Tarayıcı parmak izini maskeleme / kalabalıkta kaybolma.">
         <Row
           label="Fingerprint koruması"
           description="Master anahtar — tüm alt spoofing alanlarını etkiler."
@@ -65,6 +69,28 @@ export default function PrivacyPage() {
               update({ ...p, fingerprint: { ...p.fingerprint, enabled: v } })
             }
           />
+        </Row>
+        <Row
+          label="Koruma modu"
+          description="Uniformity: tüm kullanıcılar aynı profil (maks. anonimlik). Uyumluluk: rastgele profil (siteler daha az kırılır). Değişiklik sonrası sekmeleri yenile."
+        >
+          <select
+            disabled={!p.fingerprint.enabled}
+            value={p.fingerprint.mode ?? 'compatibility'}
+            onChange={(e) =>
+              update({
+                ...p,
+                fingerprint: {
+                  ...p.fingerprint,
+                  mode: e.target.value as 'compatibility' | 'uniformity',
+                },
+              })
+            }
+            className="h-9 max-w-[280px] rounded-lg border border-white/10 bg-bg-elevated/60 px-2 text-sm focus:outline-none focus:border-brand/50 disabled:opacity-50"
+          >
+            <option value="compatibility">Uyumluluk (R)</option>
+            <option value="uniformity">Uniformity — kalabalıkta kaybol (U)</option>
+          </select>
         </Row>
         <SpoofGroup
           disabled={!p.fingerprint.enabled}
@@ -89,7 +115,7 @@ export default function PrivacyPage() {
         />
         <Row
           label="Her oturumda rastgele profil"
-          description="Kapatılırsa aynı spoof sabit kalır (daha iyi UX, daha zayıf gizlilik)."
+          description="Siteler donanım/saat dilimi/font sorduğunda rastgele ama tutarlı profil döner. Uniformity modunda yok sayılır."
         >
           <Switch
             checked={p.fingerprint.randomProfilePerSession}
@@ -103,7 +129,7 @@ export default function PrivacyPage() {
       <Section title="WebRTC">
         <Row
           label="WebRTC koruması"
-          description="ICE adayları üzerinden IP sızıntısını önler."
+          description="STUN/TURN engeli + ICE adayı süzgeci + Chromium politikası. Kapalıyken gerçek IP sızabilir."
         >
           <Switch
             checked={p.webrtc.enabled}
@@ -208,10 +234,13 @@ export default function PrivacyPage() {
         </Row>
       </Section>
 
-      <Section title="Tracker Engelleme">
+      <Section
+        title="Tracker Engelleme"
+        description="Yerleşik seed + HaGeZi Light, EasyList, EasyPrivacy, StevenBlack otomatik 12 saatte bir güncellenir. YouTube oynatma CDN'leri allowlist (mevcut YT korumasına dokunulmaz)."
+      >
         <Row
           label="Aktif"
-          description="Yerleşik reklam/izleyici alan adı listesi ağ katmanında engellenir (alt alan adı eşleştirmeli)."
+          description="Domain set O(1) eşleşme — ağ isteği yapılmadan önce iptal."
         >
           <Switch
             checked={p.trackers.enabled}
@@ -258,7 +287,7 @@ export default function PrivacyPage() {
 
       <Section
         title="Banka Modu"
-        description="Finans sitelerinde otomatik izole alan: script enjeksiyonu kapanır, pano/konum engellenir, sekmeden çıkınca oturum temizlenir."
+        description="Finans sitelerinde otomatik izole alan: fingerprint enjeksiyonu kapanır, yeşil nabız çerçevesi görünür, pano/konum engellenir."
       >
         <Row label="Otomatik Banka Modu">
           <Switch
@@ -280,7 +309,10 @@ export default function PrivacyPage() {
         </Row>
       </Section>
 
-      <Section title="Çerezler">
+      <Section
+        title="Çerezler"
+        description="Çerez hırsızlığı koruması: 3. parti Set-Cookie ağda düşürülür; sayfa içi aşırı document.cookie okuması sınırlanır (XSS)."
+      >
         <Row label="3. parti çerez engelle">
           <Switch
             checked={p.cookies.blockThirdParty}

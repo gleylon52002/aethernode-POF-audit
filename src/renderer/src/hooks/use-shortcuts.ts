@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useTabs } from '@renderer/store/tabs';
+import { useSettings } from '@renderer/store/settings';
 import { useBookmarks } from '@renderer/store/bookmarks';
 import { getActiveWebviewControl } from '@renderer/components/layouts/webview-control-bus';
 import { FIND_BAR_EVENT } from '@renderer/components/layouts/find-bar';
+import { TAB_SEARCH_EVENT } from '@renderer/components/layouts/tab-search';
+import { CMD_PALETTE_EVENT, TRANSLATE_EVENT } from '@renderer/components/layouts/command-palette';
+import { SHIELD_EVENT } from '@renderer/components/layouts/shield-panel';
+import { openTabGroupMenu } from '@renderer/components/layouts/tab-group-menu';
+import { TEMP_LINK_EVENT } from '@renderer/components/layouts/temp-link-panel';
 
 // Klavye kısayolu dağıtıcısı.
 //
@@ -23,9 +29,13 @@ export function useShortcuts(): void {
     const offOpenUrl = window.aether.guest.onOpenUrl((url) => {
       useTabs.getState().open(url);
     });
+    const offOpenBg = window.aether.guest.onOpenBackground((url) => {
+      useTabs.getState().openBackground(url);
+    });
     return () => {
       offShortcut();
       offOpenUrl();
+      offOpenBg();
     };
   }, []);
 }
@@ -56,9 +66,10 @@ async function dispatch(action: string, arg?: number): Promise<void> {
     case 'reopenTab':
       tabs.reopen();
       break;
-    case 'incognitoTab':
+    case 'incognitoTab': {
       tabs.open(undefined, 'incognito');
       break;
+    }
     case 'nextTab':
       tabs.activateNext(1);
       break;
@@ -125,8 +136,7 @@ async function dispatch(action: string, arg?: number): Promise<void> {
     case 'screenshot': {
       const data = await ctrl.captureScreenshot();
       if (data) {
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        await downloadDataUrl(data, `pof-screenshot-${stamp}.png`);
+        tabs.open(`aethernode://annotate?src=${encodeURIComponent(data)}`);
       }
       break;
     }
@@ -167,11 +177,64 @@ async function dispatch(action: string, arg?: number): Promise<void> {
       ctrl.setReaderMode(next);
       break;
     }
+    case 'splitView':
+      tabs.toggleSplit();
+      break;
+    case 'tabSearch':
+      window.dispatchEvent(new CustomEvent(TAB_SEARCH_EVENT));
+      break;
+    case 'commandPalette':
+      window.dispatchEvent(new CustomEvent(CMD_PALETTE_EVENT));
+      break;
+    case 'translatePage':
+      window.dispatchEvent(new CustomEvent(TRANSLATE_EVENT));
+      break;
+    case 'shieldPanel':
+      window.dispatchEvent(new CustomEvent(SHIELD_EVENT));
+      break;
+    case 'tabLayoutToggle': {
+      const { settings, apply } = useSettings.getState();
+      await apply({
+        ...settings,
+        general: {
+          ...settings.general,
+          tabLayout: settings.general.tabLayout === 'vertical' ? 'horizontal' : 'vertical',
+        },
+      });
+      break;
+    }
+    case 'tabGroup': {
+      const id = tabs.activeId;
+      if (id) {
+        openTabGroupMenu({
+          tabId: id,
+          x: Math.round(window.innerWidth / 2 - 132),
+          y: 96,
+        });
+      }
+      break;
+    }
+    case 'autofillFill':
+      ctrl.sendToGuest('aethernode/guest/autofill');
+      break;
+    case 'tempLink':
+      window.dispatchEvent(new CustomEvent(TEMP_LINK_EVENT));
+      break;
+    case 'muteTab': {
+      const id = tabs.activeId;
+      if (id) tabs.toggleMute(id);
+      break;
+    }
+    case 'toggleBookmarksBar': {
+      const { settings, apply } = useSettings.getState();
+      await apply({ ...settings, general: { ...settings.general, bookmarksBarVisible: !settings.general.bookmarksBarVisible } });
+      break;
+    }
     case 'panic': {
       await window.aether.privacy.panic();
       try {
-        localStorage.removeItem('aethernode.downloads');
-        localStorage.removeItem(SESSION_KEY);
+        await window.aether.downloads.clearCompleted();
+        localStorage.removeItem('aethernode.session.tabs');
       } catch {
         /* yoksay */
       }
@@ -184,33 +247,51 @@ async function dispatch(action: string, arg?: number): Promise<void> {
 }
 
 export const SESSION_KEY = 'aethernode.session.tabs';
+export const SESSION_GROUPS_KEY = 'aethernode.session.groups';
 
 /** Oturum sekmelerini localStorage'a yazar (incognito hariç). */
 export function persistSession(): void {
   try {
-    const { tabs } = useTabs.getState();
+    const { tabs, groups } = useTabs.getState();
     const snapshot = tabs
       .filter((t) => t.profileId !== 'incognito')
-      .map((t) => ({ url: t.url, title: t.title }));
+      .map((t) => ({ url: t.url, title: t.title, groupId: t.groupId }));
     localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
+    localStorage.setItem(SESSION_GROUPS_KEY, JSON.stringify(groups));
   } catch {
     /* yoksay */
   }
 }
 
 /** Kayıtlı oturumu yükler; yoksa null. */
-export function loadSession(): Array<{ url: string; title: string }> | null {
+export function loadSession(): Array<{ url: string; title: string; groupId?: string }> | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
     return parsed.filter(
-      (x): x is { url: string; title: string } =>
+      (x): x is { url: string; title: string; groupId?: string } =>
         !!x && typeof x === 'object' && typeof (x as { url: unknown }).url === 'string',
     );
   } catch {
     return null;
+  }
+}
+
+/** Kayıtlı grup listesini yükler. */
+export function loadSessionGroups(): import('@shared/types/tabs').TabGroup[] {
+  try {
+    const raw = localStorage.getItem(SESSION_GROUPS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (g): g is import('@shared/types/tabs').TabGroup =>
+        !!g && typeof g === 'object' && typeof (g as { id: unknown }).id === 'string',
+    );
+  } catch {
+    return [];
   }
 }
 

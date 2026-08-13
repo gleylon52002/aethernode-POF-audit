@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Back,
   Forward,
@@ -12,6 +13,8 @@ import {
   Reader,
   HistoryIcon,
   Star,
+  Copy,
+  Check,
 } from '@renderer/components/ui/icons';
 import { Tooltip } from '@renderer/components/ui';
 import { useTabs } from '@renderer/store/tabs';
@@ -23,7 +26,11 @@ import { resolveInternalRoute } from '@renderer/router';
 import { cleanTrackingParams, isBankUrl } from '@shared/utils';
 import { FOCUS_ADDRESS_EVENT } from '@renderer/hooks/use-shortcuts';
 import { MediaControls } from './media-controls';
+import { QrShare } from './qr-share';
+import { TEMP_LINK_EVENT } from './temp-link-panel';
+import { LinkIcon } from '@renderer/components/ui/icons';
 import { getActiveWebviewControl } from './webview-control-bus';
+import { showToast } from './toast-bus';
 
 const SEARCH_URLS: Record<string, (q: string) => string> = {
   duckduckgo: (q) => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
@@ -78,6 +85,8 @@ export function AddressBar() {
   const urlCleanerOn = useSettings((s) => s.settings.privacy.urlCleaner.enabled);
   const bankModeOn = useSettings((s) => s.settings.privacy.bankMode?.enabled !== false);
   const scriptBlockerOn = useSettings((s) => !!s.settings.privacy.scriptBlocker?.enabled);
+  const fpEnabled = useSettings((s) => s.settings.privacy.fingerprint.enabled);
+  const fpMode = useSettings((s) => s.settings.privacy.fingerprint.mode ?? 'compatibility');
   const blockedTotal = useNetwork((s) => s.blockedTotal);
   const subscribeBlocked = useNetwork((s) => s.subscribeBlocked);
   const loadNetwork = useNetwork((s) => s.load);
@@ -89,7 +98,12 @@ export function AddressBar() {
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [sitePaused, setSitePaused] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [searchGlow, setSearchGlow] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!focused) setValue(active?.url ?? '');
@@ -109,6 +123,60 @@ export function AddressBar() {
     window.addEventListener(FOCUS_ADDRESS_EVENT, onFocusRequest);
     return () => window.removeEventListener(FOCUS_ADDRESS_EVENT, onFocusRequest);
   }, []);
+
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOverflowOpen(false);
+    };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [overflowOpen]);
+
+  const activeHost = useMemo(() => {
+    try {
+      if (!active?.url || !/^https?:\/\//i.test(active.url)) return null;
+      return new URL(active.url).hostname.replace(/^www\./, '');
+    } catch {
+      return null;
+    }
+  }, [active?.url]);
+
+  useEffect(() => {
+    if (!activeHost) {
+      setSitePaused(false);
+      return;
+    }
+    void window.aether.privacy.isSitePaused(activeHost).then((res) => {
+      if (res.ok) setSitePaused(!!res.data);
+    });
+  }, [activeHost]);
+
+  const toggleSiteProtection = async () => {
+    if (!activeHost || !active) {
+      showToast('Yalnızca http(s) sitelerde kullanılabilir', 'error');
+      return;
+    }
+    if (sitePaused) {
+      await window.aether.privacy.resumeSite(activeHost);
+      setSitePaused(false);
+      showToast(`Koruma açıldı: ${activeHost}`, 'success');
+    } else {
+      await window.aether.privacy.pauseSite(activeHost);
+      setSitePaused(true);
+      showToast(`Bu sitede koruma durduruldu: ${activeHost}`, 'info');
+    }
+    getActiveWebviewControl().hardReload();
+  };
 
   const suggestions = useMemo((): Suggestion[] => {
     if (!focused) return [];
@@ -208,17 +276,26 @@ export function AddressBar() {
     }
   };
 
-  const navigateTo = (url: string, opts?: { newTab?: boolean }) => {
+  const navigateTo = (url: string, opts?: { newTab?: boolean; background?: boolean }) => {
     let next = url;
     if (urlCleanerOn) next = cleanTrackingParams(next);
-    if (opts?.newTab) open(next);
-    else if (active) update(active.id, { url: next, loading: !next.startsWith('aethernode://') });
-    else open(next);
+    if (opts?.background) {
+      useTabs.getState().openBackground(next);
+      // Odak kutuda kalır
+      return;
+    }
+    if (opts?.newTab) {
+      open(next);
+    } else if (active) {
+      update(active.id, { url: next, loading: !next.startsWith('aethernode://') });
+    } else {
+      open(next);
+    }
     setFocused(false);
     inputRef.current?.blur();
   };
 
-  const commit = (raw: string, opts?: { newTab?: boolean; autoComplete?: boolean }) => {
+  const commit = (raw: string, opts?: { newTab?: boolean; autoComplete?: boolean; background?: boolean }) => {
     let input = raw;
     if (opts?.autoComplete && /^[\w-]+$/.test(input.trim())) {
       input = `www.${input.trim()}.com`;
@@ -226,18 +303,18 @@ export function AddressBar() {
     navigateTo(toUrl(input, engine), opts);
   };
 
-  const applySuggestion = (s: Suggestion, newTab?: boolean) => {
-    if (s.kind === 'tab' && s.tabId && !newTab) {
+  const applySuggestion = (s: Suggestion, opts?: { newTab?: boolean; background?: boolean }) => {
+    if (s.kind === 'tab' && s.tabId && !opts?.newTab && !opts?.background) {
       activate(s.tabId);
       setFocused(false);
       inputRef.current?.blur();
       return;
     }
     if (s.kind === 'search') {
-      commit(value, { newTab });
+      commit(value, opts);
       return;
     }
-    navigateTo(s.url, { newTab });
+    navigateTo(s.url, opts);
   };
 
   const toggleDeepFocus = () => {
@@ -252,6 +329,25 @@ export function AddressBar() {
     const next = !readerOn;
     update(active.id, { readerMode: next });
     getActiveWebviewControl().setReaderMode(next);
+  };
+
+  const copyLink = async () => {
+    if (!active?.url) return;
+    try {
+      await navigator.clipboard.writeText(active.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1300);
+    } catch {
+      showToast('Kopyalanamadı', 'error');
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData('text');
+    if (text && !isUrl(text.trim())) {
+      setSearchGlow(true);
+      window.setTimeout(() => setSearchGlow(false), 700);
+    }
   };
 
   return (
@@ -279,7 +375,7 @@ export function AddressBar() {
       </button>
 
       <div className="relative flex flex-1 items-center">
-        <div className="group flex w-full items-center gap-2 rounded-xl border border-white/10 bg-bg-elevated/60 px-3 focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/25 transition">
+        <div className={`group flex w-full items-center gap-2 rounded-xl border bg-bg-elevated/60 px-3 focus-within:ring-2 transition ${searchGlow ? 'border-accent/50 ring-accent/25 shadow-[0_0_12px_rgba(59,130,246,0.3)]' : 'border-white/10 focus-within:border-brand/50 focus-within:ring-brand/25'}`}>
           {isIncognito ? (
             <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-medium text-purple-300">
               Gizli
@@ -289,13 +385,13 @@ export function AddressBar() {
               Banka
             </span>
           ) : pageSecure ? (
-            <span title="Güvenli (HTTPS)">
+            <span title="Güvenli (HTTPS)" className="transition duration-200 hover:scale-110">
               <Lock className="h-4 w-4 shrink-0 text-success" />
             </span>
           ) : isInternal ? (
-            <Globe className="h-4 w-4 shrink-0 text-fg-subtle" />
+            <span className="transition duration-200 hover:scale-110"><Globe className="h-4 w-4 shrink-0 text-fg-subtle" /></span>
           ) : (
-            <span title="Güvensiz (HTTP)">
+            <span title="Güvensiz (HTTP)" className="transition duration-200 hover:scale-110">
               <Globe className="h-4 w-4 shrink-0 text-amber-400" />
             </span>
           )}
@@ -304,6 +400,7 @@ export function AddressBar() {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setFocused(true)}
+            onPaste={handlePaste}
             onBlur={() => {
               window.setTimeout(() => setFocused(false), 180);
             }}
@@ -316,12 +413,14 @@ export function AddressBar() {
                 setHighlight((h) => Math.max(h - 1, 0));
               } else if (e.key === 'Enter') {
                 e.preventDefault();
+                const bg = e.ctrlKey || e.metaKey;
                 const s = suggestions[highlight];
-                if (s) applySuggestion(s, e.altKey);
+                if (s) applySuggestion(s, { background: bg, newTab: e.altKey && !bg });
                 else
                   commit(value, {
-                    newTab: e.altKey,
-                    autoComplete: e.ctrlKey || e.metaKey,
+                    newTab: e.altKey && !bg,
+                    background: bg,
+                    autoComplete: e.shiftKey,
                   });
               } else if (e.key === 'Escape') {
                 setValue(active?.url ?? '');
@@ -334,6 +433,37 @@ export function AddressBar() {
             spellCheck={false}
             autoComplete="off"
           />
+          <button
+            type="button"
+            onClick={() => void copyLink()}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-fg-subtle transition hover:bg-white/5 hover:text-fg"
+            aria-label="Linki kopyala"
+            title="Linki kopyala"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {copied ? (
+                <motion.span
+                  key="check"
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Check className="h-3.5 w-3.5 text-success" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="copy"
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
           <Search className="h-4 w-4 shrink-0 text-fg-subtle" />
         </div>
 
@@ -345,8 +475,29 @@ export function AddressBar() {
                 <li key={`${s.kind}-${s.url}-${s.tabId ?? i}`}>
                   <button
                     type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => applySuggestion(s)}
+                    onMouseDown={(e) => {
+                      // Ctrl / orta tık = arka plan; sol tık = mevcut davranış
+                      if (e.button === 1 || e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        applySuggestion(s, { background: true });
+                        return;
+                      }
+                      e.preventDefault(); // blur olmasın diye
+                    }}
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        applySuggestion(s, { background: true });
+                        return;
+                      }
+                      applySuggestion(s, { newTab: e.altKey });
+                    }}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        applySuggestion(s, { background: true });
+                      }
+                    }}
                     className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm ${
                       i === highlight ? 'bg-brand/20 text-fg' : 'text-fg-muted hover:bg-white/5 hover:text-fg'
                     }`}
@@ -412,45 +563,168 @@ export function AddressBar() {
             </button>
           </Tooltip>
           <MediaControls disabled={isInternal} />
-          <Tooltip label={readerOn ? 'Okuyucu Modunu kapat' : 'Okuyucu Modu'}>
+          <QrShare url={active.url} disabled={isInternal} />
+          <Tooltip label="Sayfayı çevir (Ctrl+Shift+Y)">
             <button
-              onClick={toggleReader}
-              className={`grid h-8 w-8 place-items-center rounded-lg transition ${
-                readerOn ? 'bg-brand/20 text-brand' : 'text-fg-muted hover:bg-white/5 hover:text-fg'
-              }`}
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('aether:translate-page'))}
+              className="grid h-8 w-8 place-items-center rounded-lg text-fg-muted transition hover:bg-white/5 hover:text-fg"
+              aria-label="Çevir"
             >
-              <Reader className="h-4 w-4" />
-            </button>
-          </Tooltip>
-          <Tooltip label={deepFocusOn ? 'Sessiz Mod kapalı yap' : 'Sessiz Mod (Deep Focus)'}>
-            <button
-              onClick={toggleDeepFocus}
-              className={`grid h-8 w-8 place-items-center rounded-lg transition ${
-                deepFocusOn ? 'bg-brand/20 text-brand' : 'text-fg-muted hover:bg-white/5 hover:text-fg'
-              }`}
-            >
-              <Focus className="h-4 w-4" />
+              <span className="text-[10px] font-bold">Aa</span>
             </button>
           </Tooltip>
         </>
       )}
 
-      <Tooltip label={`${blockedTotal} izleyici/reklam isteği engellendi`}>
-        <div className="flex h-8 items-center gap-1.5 rounded-lg bg-success/10 px-2 text-xs font-medium text-success">
-          <Shield className="h-3.5 w-3.5" />
-          {blockedTotal}
-        </div>
+
+      <Tooltip
+        side="bottom"
+        align="end"
+        label={
+          sitePaused
+            ? `Koruma bu sitede kapalı — tıklayınca yeniden açılır (${blockedTotal} engel sayacı)`
+            : `${blockedTotal} izleyici/reklam isteği engellendi. Tıklayınca bu sitede korumayı durdurursunuz.`
+        }
+      >
+        <button
+          type="button"
+          onClick={() => void toggleSiteProtection()}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('aether:shield-panel'));
+          }}
+          className={`flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition ${
+            sitePaused
+              ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30'
+              : 'bg-success/10 text-success hover:bg-success/20'
+          }`}
+          aria-label={sitePaused ? 'Korumayı aç' : 'Bu sitede korumayı durdur'}
+        >
+          <Shield className="h-3.5 w-3.5 shrink-0" />
+          <span>{sitePaused ? 'Kapalı' : blockedTotal}</span>
+        </button>
       </Tooltip>
 
-      <Tooltip label={scriptBlockerOn ? 'JavaScript kapalı' : 'JavaScript açık'}>
-        <div
-          className={`flex h-8 items-center rounded-lg px-2 text-[10px] font-semibold tracking-wide ${
-            scriptBlockerOn ? 'bg-amber-500/15 text-amber-300' : 'bg-white/5 text-fg-muted'
-          }`}
-        >
-          JS {scriptBlockerOn ? 'kapalı' : 'açık'}
-        </div>
-      </Tooltip>
+      <div className="relative" ref={overflowRef}>
+        <Tooltip label="Diğer araçlar" side="left">
+          <button
+            type="button"
+            onClick={() => setOverflowOpen((v) => !v)}
+            className={`grid h-8 w-8 place-items-center rounded-lg transition ${
+              overflowOpen
+                ? 'bg-white/10 text-fg'
+                : 'text-fg-muted hover:bg-white/5 hover:text-fg'
+            }`}
+            aria-label="Menü"
+            aria-expanded={overflowOpen}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M4 7h16M4 12h16M4 17h16"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </Tooltip>
+        {overflowOpen && (
+          <div className="absolute right-0 top-9 z-[80] w-64 overflow-hidden rounded-xl border border-white/10 bg-bg-elevated/95 py-1 shadow-2xl backdrop-blur-xl">
+            {!isInternal && active && (
+              <>
+                <OverflowItem
+                  label="Geçici bağlantı"
+                  hint="Ctrl+Shift+K"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent(TEMP_LINK_EVENT));
+                    setOverflowOpen(false);
+                  }}
+                  icon={<LinkIcon className="h-3.5 w-3.5" />}
+                />
+                <OverflowItem
+                  label="Uygulama olarak aç (PWA)"
+                  onClick={() => {
+                    if (active && /^https:\/\//i.test(active.url)) {
+                      void window.aether.pwa.open(active.url, active.title || undefined);
+                    }
+                    setOverflowOpen(false);
+                  }}
+                  icon={<span className="text-[9px] font-bold">App</span>}
+                />
+                <OverflowItem
+                  label={readerOn ? 'Okuyucu modunu kapat' : 'Okuyucu modu'}
+                  active={readerOn}
+                  onClick={() => {
+                    toggleReader();
+                    setOverflowOpen(false);
+                  }}
+                  icon={<Reader className="h-3.5 w-3.5" />}
+                />
+                <OverflowItem
+                  label={deepFocusOn ? 'Sessiz modu kapat' : 'Sessiz mod (Deep Focus)'}
+                  active={deepFocusOn}
+                  onClick={() => {
+                    toggleDeepFocus();
+                    setOverflowOpen(false);
+                  }}
+                  icon={<Focus className="h-3.5 w-3.5" />}
+                />
+                <OverflowItem
+                  label={
+                    sitePaused
+                      ? 'Bu sitede korumayı aç'
+                      : 'Bu sitede korumayı durdur (reklam/izleyici)'
+                  }
+                  active={sitePaused}
+                  onClick={() => {
+                    void toggleSiteProtection();
+                    setOverflowOpen(false);
+                  }}
+                  icon={<Shield className="h-3.5 w-3.5" />}
+                />
+                <OverflowItem
+                  label="Koruma paneli"
+                  hint="Ctrl+Shift+S"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('aether:shield-panel'));
+                    setOverflowOpen(false);
+                  }}
+                  icon={<Shield className="h-3.5 w-3.5" />}
+                />
+                <div className="my-1 border-t border-white/5" />
+              </>
+            )}
+            {fpEnabled && (
+              <div className="px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wide text-fg-subtle">Parmak izi</div>
+                <div
+                  className={`mt-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium ${
+                    fpMode === 'uniformity'
+                      ? 'bg-indigo-500/20 text-indigo-100'
+                      : 'bg-white/5 text-fg'
+                  }`}
+                >
+                  <span className="grid h-5 w-5 place-items-center rounded bg-black/30 text-[10px] font-bold">
+                    {fpMode === 'uniformity' ? 'U' : 'R'}
+                  </span>
+                  {fpMode === 'uniformity' ? 'Uniformity' : 'Uyumluluk'}
+                </div>
+              </div>
+            )}
+            <div className="px-3 py-2">
+              <div className="text-[10px] uppercase tracking-wide text-fg-subtle">JavaScript</div>
+              <div
+                className={`mt-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+                  scriptBlockerOn ? 'bg-amber-500/15 text-amber-300' : 'bg-white/5 text-fg-muted'
+                }`}
+              >
+                JS {scriptBlockerOn ? 'kapalı' : 'açık'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {loading && (
         <div className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-white/5">
@@ -460,3 +734,32 @@ export function AddressBar() {
     </div>
   );
 }
+
+function OverflowItem({
+  label,
+  hint,
+  icon,
+  active,
+  onClick,
+}: {
+  label: string;
+  hint?: string;
+  icon: ReactNode;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition hover:bg-white/5 ${
+        active ? 'text-brand' : 'text-fg'
+      }`}
+    >
+      <span className="grid h-6 w-6 shrink-0 place-items-center text-fg-muted">{icon}</span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {hint && <span className="text-[10px] text-fg-subtle">{hint}</span>}
+    </button>
+  );
+}
+

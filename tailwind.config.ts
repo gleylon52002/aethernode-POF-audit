@@ -8,19 +8,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Marka
+        // Marka — runtime'da --brand-* CSS variable ile değişir (Madde 1)
         brand: {
-          DEFAULT: '#7C3AED',
-          50: '#F5F1FF',
-          100: '#EDE4FF',
-          200: '#D6C2FF',
-          300: '#B79AFF',
-          400: '#9B6BFF',
-          500: '#7C3AED',
-          600: '#6726D9',
-          700: '#511BB0',
-          800: '#3C1286',
-          900: '#280B5C',
+          DEFAULT: 'var(--brand-500, #7C3AED)',
+          50: 'var(--brand-50, #F5F1FF)',
+          100: 'var(--brand-100, #EDE4FF)',
+          200: 'var(--brand-200, #D6C2FF)',
+          300: 'var(--brand-300, #B79AFF)',
+          400: 'var(--brand-400, #9B6BFF)',
+          500: 'var(--brand-500, #7C3AED)',
+          600: 'var(--brand-600, #6726D9)',
+          700: 'var(--brand-700, #511BB0)',
+          800: 'var(--brand-800, #3C1286)',
+          900: 'var(--brand-900, #280B5C)',
         },
         accent: {
           DEFAULT: '#3B82F6',

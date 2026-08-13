@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { AppShell } from '@renderer/components/layouts';
 import { useSettings } from '@renderer/store/settings';
 import { useTabs } from '@renderer/store/tabs';
-import { loadSession } from '@renderer/hooks/use-shortcuts';
+import { loadSession, loadSessionGroups } from '@renderer/hooks/use-shortcuts';
 import { NEW_TAB_URL } from '@shared/constants/app';
 import '@renderer/styles/global.css';
+import { initSoundUnlock } from '@renderer/hooks/use-sound';
+
+initSoundUnlock();
 
 // eslint-disable-next-line no-console
 console.log('[aether] renderer mounted');
@@ -31,6 +34,7 @@ function App() {
     if (startupPage === 'lastSession') {
       const session = loadSession();
       if (session && session.length > 0) {
+        useTabs.getState().restoreGroups(loadSessionGroups());
         restoreSession(session);
         return;
       }

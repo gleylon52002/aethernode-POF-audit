@@ -1,4 +1,6 @@
 import { defineHandler, noPayload } from '@main/ipc/router';
+import { webContents } from 'electron';
+import { z } from 'zod';
 import { IPC } from '@shared/constants';
 import type { TabSnapshot } from '@shared/types/tabs';
 
@@ -9,5 +11,21 @@ export function registerTabHandlers(): void {
     channel: IPC.tabs.list,
     schema: noPayload,
     handle: (): TabSnapshot[] => [],
+  });
+  defineHandler({
+    channel: IPC.tabs.forceClose,
+    schema: z.object({ wcId: z.number() }),
+    handle: ({ wcId }) => {
+      try {
+        const wc = webContents.fromId(wcId);
+        if (wc && !wc.isDestroyed()) {
+          wc.forcefullyCrashRenderer();
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
   });
 }

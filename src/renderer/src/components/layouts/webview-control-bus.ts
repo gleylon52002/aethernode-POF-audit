@@ -35,6 +35,8 @@ export interface WebviewControl {
   setPlaybackRate(rate: number): Promise<void>;
   setVolumeGain(gain: number): Promise<void>;
   getMediaState(): Promise<MediaState>;
+  /** Guest'e serbest kanal mesajı gönderir (autofill, medya indirme vb.) */
+  sendToGuest(channel: string, ...args: unknown[]): void;
 }
 
 const noopControl: WebviewControl = {
@@ -60,6 +62,7 @@ const noopControl: WebviewControl = {
   setPlaybackRate: async () => {},
   setVolumeGain: async () => {},
   getMediaState: async () => ({ rate: 1, gain: 1 }),
+  sendToGuest() {},
 };
 
 let current: WebviewControl = noopControl;
@@ -84,61 +87,6 @@ function onFound(e: Event): void {
   findListeners.forEach((cb) => cb(payload));
 }
 
-/** Sayfadaki tüm video/audio öğelerine hız ve ses kazancı uygular. */
-const MEDIA_BOOTSTRAP = `
-(() => {
-  if (window.__aetherMedia && window.__aetherMedia.__ready) return true;
-  const S = {
-    rate: 1,
-    gain: 1,
-    ctx: null,
-    gains: new Map(),
-    __ready: true,
-    apply(rate, gain) {
-      if (typeof rate === 'number' && rate > 0) S.rate = rate;
-      if (typeof gain === 'number' && gain >= 0) S.gain = gain;
-      document.querySelectorAll('video, audio').forEach((el) => {
-        try { el.playbackRate = S.rate; } catch (e) {}
-        try {
-          if (!S.ctx) S.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          if (S.ctx.state === 'suspended') S.ctx.resume();
-          let g = S.gains.get(el);
-          if (!g) {
-            const src = S.ctx.createMediaElementSource(el);
-            g = S.ctx.createGain();
-            src.connect(g);
-            g.connect(S.ctx.destination);
-            S.gains.set(el, g);
-          }
-          // GainNode her zaman; <=1 iken native volume + gain=1, >1 iken boost
-          if (S.gain <= 1) {
-            el.volume = Math.min(1, Math.max(0, S.gain));
-            g.gain.value = 1;
-          } else {
-            el.volume = 1;
-            g.gain.value = S.gain;
-          }
-        } catch (e) {
-          try { el.volume = Math.min(1, Math.max(0, Math.min(S.gain, 1))); } catch (_) {}
-        }
-      });
-      return { rate: S.rate, gain: S.gain };
-    },
-    get() { return { rate: S.rate || 1, gain: S.gain || 1 }; },
-  };
-  window.__aetherMedia = S;
-  const mo = new MutationObserver(() => {
-    if (S.rate !== 1 || S.gain !== 1) S.apply();
-  });
-  mo.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener('play', (e) => {
-    const t = e.target;
-    if (t && (t.tagName === 'VIDEO' || t.tagName === 'AUDIO')) S.apply();
-  }, true);
-  return true;
-})();
-`;
-
 export function setActiveWebviewControl(el: WebviewElement | null): WebviewControl {
   if (boundEl) {
     try {
@@ -157,21 +105,19 @@ export function setActiveWebviewControl(el: WebviewElement | null): WebviewContr
   boundEl = el;
   el.addEventListener('found-in-page', onFound);
 
+  // Evrensel medya: main process TÜM frame'lerde (iframe player'lar dahil) uygular.
   const runMedia = async (rate?: number, gain?: number): Promise<MediaState> => {
     try {
-      await el.executeJavaScript(MEDIA_BOOTSTRAP, false);
-      const result = await el.executeJavaScript(
-        `window.__aetherMedia.apply(${rate === undefined ? 'undefined' : rate}, ${gain === undefined ? 'undefined' : gain})`,
-        false,
-      );
-      if (result && typeof result === 'object') {
+      const wcId = el.getWebContentsId();
+      const res = await window.aether.media.apply(wcId, rate, gain);
+      if (res.ok && res.data) {
         return {
-          rate: Number((result as MediaState).rate) || 1,
-          gain: Number((result as MediaState).gain) || 1,
+          rate: Number(res.data.rate) || 1,
+          gain: Number(res.data.gain) || 1,
         };
       }
     } catch {
-      /* sayfa hazır değil */
+      /* webview hazır değil */
     }
     return { rate: rate ?? 1, gain: gain ?? 1 };
   };
@@ -247,12 +193,12 @@ export function setActiveWebviewControl(el: WebviewElement | null): WebviewContr
     },
     getMediaState: async () => {
       try {
-        await el.executeJavaScript(MEDIA_BOOTSTRAP, false);
-        const result = await el.executeJavaScript(`window.__aetherMedia.get()`, false);
-        if (result && typeof result === 'object') {
+        const wcId = el.getWebContentsId();
+        const res = await window.aether.media.state(wcId);
+        if (res.ok && res.data) {
           return {
-            rate: Number((result as MediaState).rate) || 1,
-            gain: Number((result as MediaState).gain) || 1,
+            rate: Number(res.data.rate) || 1,
+            gain: Number(res.data.gain) || 1,
           };
         }
       } catch {
@@ -260,6 +206,7 @@ export function setActiveWebviewControl(el: WebviewElement | null): WebviewContr
       }
       return { rate: 1, gain: 1 };
     },
+    sendToGuest: (channel, ...args) => safe(() => el.send(channel, ...args)),
   };
   return current;
 }

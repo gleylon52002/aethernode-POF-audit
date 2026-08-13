@@ -3,13 +3,16 @@ import { Tooltip } from '@renderer/components/ui';
 import { getActiveWebviewControl } from './webview-control-bus';
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3] as const;
-const GAINS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3] as const;
+const GAINS = [0, 0.5, 1, 1.5, 2, 3] as const;
+const MIN_RATE = 0.1;
+const MAX_RATE = 10;
 
-// Video hızı + sekme ses yükseltme (GainNode ile %100 üzeri).
+// Video hızı + sekme ses yükseltme — tüm sitelerde (iframe player'lar dahil).
 export function MediaControls({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [rate, setRate] = useState(1);
   const [gain, setGain] = useState(1);
+  const [rateText, setRateText] = useState('1');
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,6 +22,7 @@ export function MediaControls({ disabled }: { disabled?: boolean }) {
       .then((s) => {
         setRate(s.rate);
         setGain(s.gain);
+        setRateText(String(s.rate));
       });
   }, [open, disabled]);
 
@@ -37,6 +41,22 @@ export function MediaControls({ disabled }: { disabled?: boolean }) {
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  const applyRate = (r: number) => {
+    const clamped = Math.min(MAX_RATE, Math.max(MIN_RATE, r));
+    setRate(clamped);
+    setRateText(String(clamped));
+    void getActiveWebviewControl().setPlaybackRate(clamped);
+  };
+
+  const commitManualRate = () => {
+    const parsed = Number(rateText.replace(',', '.'));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      applyRate(parsed);
+    } else {
+      setRateText(String(rate));
+    }
+  };
 
   if (disabled) return null;
 
@@ -58,21 +78,18 @@ export function MediaControls({ disabled }: { disabled?: boolean }) {
       </Tooltip>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl border border-white/10 bg-bg-elevated/95 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-60 rounded-xl border border-white/10 bg-bg-elevated/95 p-3 shadow-2xl backdrop-blur-xl">
           <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-fg-subtle">
             Oynatma hızı
           </div>
-          <div className="mb-3 flex flex-wrap gap-1">
+          <div className="mb-2 flex flex-wrap gap-1">
             {RATES.map((r) => (
               <button
                 key={r}
                 type="button"
-                onClick={() => {
-                  setRate(r);
-                  void getActiveWebviewControl().setPlaybackRate(r);
-                }}
+                onClick={() => applyRate(r)}
                 className={`rounded-md px-2 py-1 text-[11px] tabular-nums ${
-                  rate === r
+                  Math.abs(rate - r) < 0.001
                     ? 'bg-brand text-white'
                     : 'bg-white/5 text-fg-muted hover:bg-white/10 hover:text-fg'
                 }`}
@@ -80,6 +97,34 @@ export function MediaControls({ disabled }: { disabled?: boolean }) {
                 {r}×
               </button>
             ))}
+          </div>
+
+          {/* Manuel hız girişi */}
+          <div className="mb-3 flex items-center gap-1.5">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={rateText}
+              onChange={(e) => setRateText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  commitManualRate();
+                }
+              }}
+              onBlur={commitManualRate}
+              placeholder="örn. 1.85"
+              className="w-20 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] tabular-nums text-fg focus:border-brand/50 focus:outline-none"
+              aria-label="Manuel oynatma hızı"
+            />
+            <span className="text-[11px] text-fg-subtle">× manuel ({MIN_RATE}–{MAX_RATE})</span>
+            <button
+              type="button"
+              onClick={commitManualRate}
+              className="ml-auto rounded-md bg-white/5 px-2 py-1 text-[11px] text-fg-muted hover:bg-white/10 hover:text-fg"
+            >
+              Uygula
+            </button>
           </div>
 
           <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-fg-subtle">
@@ -118,7 +163,8 @@ export function MediaControls({ disabled }: { disabled?: boolean }) {
             ))}
           </div>
           <p className="mt-2 text-[10px] text-fg-subtle">
-            %100 üzeri ses yükseltme (laptop için). Tüm sitelerdeki video/audio için geçerli.
+            Tüm sitelerde geçerli — iframe içindeki oynatıcılar dahil. %100 üzeri boost, korumasız
+            çapraz-origin seslerde otomatik atlanır (ses kesilmesin diye).
           </p>
         </div>
       )}

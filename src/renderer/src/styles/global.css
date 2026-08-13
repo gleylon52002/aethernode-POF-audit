@@ -14,6 +14,56 @@
     --brand: 124 58 237;
     --accent: 59 130 246;
     --bg: 11 11 15;
+    /* Brand palette — default purple (Madde 1) */
+    --brand-50: #F5F1FF;
+    --brand-100: #EDE4FF;
+    --brand-200: #D6C2FF;
+    --brand-300: #B79AFF;
+    --brand-400: #9B6BFF;
+    --brand-500: #7C3AED;
+    --brand-600: #6726D9;
+    --brand-700: #511BB0;
+    --brand-800: #3C1286;
+    --brand-900: #280B5C;
+  }
+
+  [data-accent='green'] {
+    --brand-50: #ECFDF5;
+    --brand-100: #D1FAE5;
+    --brand-200: #A7F3D0;
+    --brand-300: #6EE7B7;
+    --brand-400: #34D399;
+    --brand-500: #10B981;
+    --brand-600: #059669;
+    --brand-700: #047857;
+    --brand-800: #065F46;
+    --brand-900: #022C22;
+  }
+
+  [data-accent='amber'] {
+    --brand-50: #FFFBEB;
+    --brand-100: #FEF3C7;
+    --brand-200: #FDE68A;
+    --brand-300: #FCD34D;
+    --brand-400: #FBBF24;
+    --brand-500: #F59E0B;
+    --brand-600: #D97706;
+    --brand-700: #B45309;
+    --brand-800: #92400E;
+    --brand-900: #78350F;
+  }
+
+  [data-accent='red'] {
+    --brand-50: #FEF2F2;
+    --brand-100: #FEE2E2;
+    --brand-200: #FECACA;
+    --brand-300: #FCA5A5;
+    --brand-400: #F87171;
+    --brand-500: #EF4444;
+    --brand-600: #DC2626;
+    --brand-700: #B91C1C;
+    --brand-800: #991B1B;
+    --brand-900: #7F1D1D;
   }
 
   html,
@@ -73,6 +123,14 @@
     box-shadow:
       0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
       0 8px 32px rgba(0, 0, 0, 0.45);
+    transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
+  }
+  .glass:hover {
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+      0 12px 40px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(124, 58, 237, 0.08);
   }
 
   .glass-strong {
@@ -98,4 +156,31 @@
   .btn-brand:active {
     transform: translateY(0);
   }
+
+  /* Banka Modu — yeşil nabız çerçevesi */
+  .bank-pulse-frame {
+    border: 2px solid rgba(16, 185, 129, 0.85);
+    border-radius: 0;
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.35),
+      0 0 24px rgba(16, 185, 129, 0.35);
+    animation: bank-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes bank-pulse {
+    0%,
+    100% {
+      border-color: rgba(16, 185, 129, 0.55);
+      box-shadow:
+        inset 0 0 0 1px rgba(16, 185, 129, 0.25),
+        0 0 12px rgba(16, 185, 129, 0.2);
+    }
+    50% {
+      border-color: rgba(52, 211, 153, 1);
+      box-shadow:
+        inset 0 0 0 1px rgba(52, 211, 153, 0.55),
+        0 0 28px rgba(16, 185, 129, 0.55);
+    }
+  }
+
 }

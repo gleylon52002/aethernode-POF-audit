@@ -1,4 +1,5 @@
 import type { Input, WebContents } from 'electron';
+import { app } from 'electron';
 import { IPC } from '@shared/constants';
 import { getMainWindow } from '@main/windows';
 
@@ -39,7 +40,18 @@ export type ShortcutAction =
   | 'screenshot'
   | 'viewSource'
   | 'savePage'
-  | 'readerMode';
+  | 'readerMode'
+  | 'splitView'
+  | 'muteTab'
+  | 'tabSearch'
+  | 'tabLayoutToggle' // Ctrl+Shift+V — yatay/dikey sekme çubuğu
+  | 'tabGroup' // Ctrl+Shift+G — hızlı gruplama menüsü
+  | 'autofillFill' // Ctrl+Shift+F — aktif formu doldur
+  | 'tempLink' // Ctrl+Shift+K — geçici bağlantı oluştur
+  | 'commandPalette' // Ctrl+K
+  | 'translatePage'
+  | 'shieldPanel'
+  | 'toggleBookmarksBar';
 
 export interface ShortcutEvent {
   action: ShortcutAction;
@@ -57,7 +69,10 @@ function match(input: Input): ShortcutEvent | null {
   if (key === 'F5') return { action: mod ? 'hardReload' : 'reload' };
   if (key === 'F6') return { action: 'focusAddress' };
   if (key === 'F11') return { action: 'fullscreen' };
-  if (key === 'F12') return { action: 'devtools' };
+  if (key === 'F12') {
+    if (!app.isPackaged) return { action: 'devtools' };
+    return null;
+  }
   if (key === 'Escape' && !mod && !shift && !alt) return { action: 'stop' };
 
   if (alt && !mod && key === 'd') return { action: 'focusAddress' };
@@ -75,14 +90,37 @@ function match(input: Input): ShortcutEvent | null {
         return { action: 'incognitoTab' };
       case 'o':
         return { action: 'openBookmarks' };
+      case 'b':
+        return { action: 'toggleBookmarksBar' };
       case 'r':
         return { action: 'hardReload' };
       case 'i':
-        return { action: 'devtools' };
+        // Prod'da DevTools kapalı
+        return app.isPackaged ? null : { action: 'devtools' };
       case 'x':
         return { action: 'panic' };
       case 'p':
         return { action: 'screenshot' };
+      case '\\':
+        return { action: 'splitView' };
+      case 'l':
+        return { action: 'splitView' };
+      case 'm':
+        return { action: 'muteTab' };
+      case 'a':
+        return { action: 'tabSearch' };
+      case 'v':
+        return { action: 'tabLayoutToggle' };
+      case 'g':
+        return { action: 'tabGroup' };
+      case 'f':
+        return { action: 'autofillFill' };
+      case 'k':
+        return { action: 'tempLink' };
+      case 's':
+        return { action: 'shieldPanel' };
+      case 'y':
+        return { action: 'translatePage' };
       case '+':
         return { action: 'zoomIn' };
       default:
@@ -113,6 +151,8 @@ function match(input: Input): ShortcutEvent | null {
       return { action: 'savePage' };
     case 'u':
       return { action: 'viewSource' };
+    case 'k':
+      return { action: 'commandPalette' };
     case '+':
     case '=':
       return { action: 'zoomIn' };

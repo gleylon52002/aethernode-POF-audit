@@ -1,28 +1,36 @@
 import { app, session, type Session } from 'electron';
 import { GUEST_PARTITIONS } from '@main/network/guard';
 
+const attached = new WeakSet<Session>();
+
+// Zararsız, video/oyun deneyimi için gerekli izinler — gizlilik etkisi yok.
+const HARMLESS_PERMISSIONS = new Set(['fullscreen', 'pointerLock', 'keyboardLock']);
+
+function harden(ses: Session): void {
+  if (attached.has(ses)) return;
+  attached.add(ses);
+  ses.setPermissionRequestHandler((_wc, perm, callback) => {
+    callback(HARMLESS_PERMISSIONS.has(perm));
+  });
+  try {
+    ses.setSpellCheckerEnabled(false);
+  } catch {
+    /* yoksay */
+  }
+}
+
 // Oturum güvenlik varsayılanları:
-//   - Tüm izin istekleri (kamera, mikrofon, konum, bildirim, ...) reddedilir.
-//     Sekme içerikleri ayrı partition'larda çalıştığı için deny-all kuralı
-//     default session'a ek olarak guest partition'lara da uygulanır.
-//   - Yazım denetimi kapalı (kelimelerin işletim sistemi servislerine
-//     gönderilmesini önler).
+//   - Tüm izin istekleri reddedilir (kamera, mikrofon, konum, bildirim, ...)
+//   - Yazım denetimi kapalı
 export function registerSecurityDefaults(): void {
   const sessions: Session[] = [
     session.defaultSession,
     ...GUEST_PARTITIONS.map((p) => session.fromPartition(p)),
   ];
-
-  for (const ses of sessions) {
-    ses.setPermissionRequestHandler((_wc, _perm, callback) => {
-      callback(false);
-    });
-    try {
-      ses.setSpellCheckerEnabled(false);
-    } catch {
-      /* yoksay */
-    }
-  }
-
+  for (const ses of sessions) harden(ses);
   app.setName('AetherNode Secure Browser');
+}
+
+export function attachSecurityDefaultsPartition(partition: string): void {
+  harden(session.fromPartition(partition));
 }

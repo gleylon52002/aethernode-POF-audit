@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Min, Max, Close } from '@renderer/components/ui/icons';
+import logoUrl from '@renderer/assets/logo.svg';
 
-// Özel titlebar — macOS'ta sistem düğmeleri görünür, Windows'ta biz çiziyoruz.
-// Pencere durumu main'den etkinlikle gelir (polling yok).
 export function Titlebar() {
   const [platform, setPlatform] = useState<string>('');
   const [maximized, setMaximized] = useState(false);
@@ -21,7 +20,7 @@ export function Titlebar() {
   return (
     <header className="titlebar flex h-10 shrink-0 items-center justify-between border-b border-white/5 bg-bg-base/80 px-3 backdrop-blur">
       <div className="flex items-center gap-2 text-xs text-fg-muted">
-        <div className="h-2 w-2 rounded-full bg-brand shadow-glow" />
+        <img src={logoUrl} alt="AetherNode" className="h-6 w-6 rounded-full object-cover" draggable={false} />
         <span className="font-medium tracking-wide">AetherNode</span>
       </div>
       {isMac ? null : (

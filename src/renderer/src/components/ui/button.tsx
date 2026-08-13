@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from './cn';
+import { playUiSound } from '@renderer/hooks/use-sound';
 
 // shadcn tarzı minimal Button. Üç varyant + iki boyut. Framer Motion yok —
 // CSS transition ile yeterince akıcı.
@@ -13,7 +14,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   brand:
-    'bg-brand-gradient text-white shadow-glow hover:brightness-110 active:brightness-95',
+    'bg-brand-gradient text-white shadow-glow hover:brightness-110 active:brightness-95 hover:shadow-[0_8px_32px_rgba(124,58,237,0.4)]',
   ghost: 'text-fg-muted hover:text-fg hover:bg-white/5',
   outline:
     'border border-white/10 text-fg hover:bg-white/5 hover:border-white/20',
@@ -28,11 +29,17 @@ const sizes: Record<Size, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'subtle', size = 'md', ...props }, ref) => (
+  ({ className, variant = 'subtle', size = 'md', onClick, ...props }, ref) => (
     <button
       ref={ref}
+      onClick={(e) => {
+        if (variant === 'brand' && !props.disabled) {
+          try { playUiSound('primaryClick'); } catch {}
+        }
+        onClick?.(e as React.MouseEvent<HTMLButtonElement>);
+      }}
       className={cn(
-        'inline-flex select-none items-center justify-center gap-2 font-medium transition duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex select-none items-center justify-center gap-2 font-medium transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],
         className,

@@ -2,8 +2,16 @@
 // Her alan tek anahtarla kapatılıp açılabilir; varsayılanlar
 // en güvenli ayarı temsil eder (Privacy-by-default).
 
+/**
+ * compatibility: randomizasyon temelli (siteler daha az kırılır)
+ * uniformity: tüm AetherNode kullanıcıları AYNI profili raporlar —
+ *             "kalabalıkta kaybol", maksimum anonimlik.
+ */
+export type FingerprintMode = 'compatibility' | 'uniformity';
+
 export interface FingerprintConfig {
   enabled: boolean;
+  mode: FingerprintMode;
   spoofCanvas: boolean;
   spoofWebGL: boolean;
   spoofAudio: boolean;
@@ -21,6 +29,8 @@ export interface FingerprintConfig {
 export interface WebRtcConfig {
   enabled: boolean;
   policy: 'disable_non_proxied_udp' | 'force_proxy' | 'block_all';
+  /** STUN/TURN'e izin verilen host'lar (örn. meet.google.com) — boşsa hiçbir istisna yok */
+  allowedHosts: string[];
 }
 
 export interface DnsConfig {

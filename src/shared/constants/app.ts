@@ -1,9 +1,9 @@
 // Marka, tasarım ve genel uygulama sabitleri.
 export const APP = {
-  name: 'AetherNode Secure Browser',
+  name: 'AetherNode POF',
   shortName: 'AetherNode',
   appId: 'com.aethernode.browser',
-  version: '0.1.0',
+  version: '1.0.3',
 } as const;
 
 // Renderer'ın yüklendiği Vite dev sunucu adresi (geliştirme).

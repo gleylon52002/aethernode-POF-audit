@@ -1,43 +1,67 @@
 import { SecureStore } from '@main/store/secure-store';
 import {
-  sealWithPassword,
+  sealWithPasswordAsync,
   openWithPassword,
+  openWithPasswordAsync,
   randomId,
   type SealedPayload,
 } from '@main/services/crypto';
+import { getDeviceEncryptionKey } from '@main/services/device-key';
 import type { PasswordEntry, VaultStatus } from '@shared/types/passwords';
 
-// Vault — şifre kasa servisi (Aşama 6).
-//
-// Katmanlı koruma:
-//   1. SecureStore dosyayı cihaz anahtarıyla (AETHER_KEY) AES ile şifreler.
-//   2. Entry listesi JSON'a serileştirilip master-password ile ayrıca
-//      AES-256-GCM (PBKDF2 anahtar türetimi) mühürlenir.
-//
-// Master-password oturum boyunca main belleğinde tutulur; diske asla yazılmaz.
-// unlock, mevcut kasa yoksa boş bir kasa mühürler, varsa openWithPassword ile
-// parolayı doğrular (yanlış parola auth-tag hatası fırlatır). lock parolayı
-// bellekten siler; sonraki tüm erişim "kasa kilitli" hatası döner.
-//
-// Güvenli notlar (notes-service) aynı master-password'u paylaşır — buradan
-// getMasterPassword ile alır.
-
-const KEY = process.env.AETHER_KEY ?? 'aethernode-device-key';
+// Vault — şifre kasa servisi.
+// Katman 1: cihaz anahtarı (safeStorage). Katman 2: master-password AES-GCM.
 
 interface VaultRecord {
   entries: PasswordEntry[];
 }
 
-const store = new SecureStore<{ sealed: SealedPayload | null }>({
-  name: 'password-vault',
-  encryptionKey: KEY,
-  defaults: { sealed: null },
-});
+let storeRef: SecureStore<{ sealed: SealedPayload | null }> | null = null;
+
+function store(): SecureStore<{ sealed: SealedPayload | null }> {
+  if (!storeRef) {
+    storeRef = new SecureStore<{ sealed: SealedPayload | null }>({
+      name: 'password-vault',
+      encryptionKey: getDeviceEncryptionKey(),
+      defaults: { sealed: null },
+    });
+  }
+  return storeRef;
+}
 
 let masterPassword: string | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let autoLockMinutes = 5;
+
+function clearIdleTimer(): void {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+}
+
+function scheduleIdleLock(): void {
+  clearIdleTimer();
+  if (autoLockMinutes <= 0 || masterPassword === null) return;
+  idleTimer = setTimeout(() => {
+    masterPassword = null;
+    clearIdleTimer();
+  }, autoLockMinutes * 60 * 1000);
+  idleTimer.unref?.();
+}
+
+export function setVaultAutoLockMinutes(minutes: number): void {
+  autoLockMinutes = Math.max(0, Math.floor(minutes));
+  if (masterPassword !== null) scheduleIdleLock();
+  else clearIdleTimer();
+}
+
+export function resetVaultIdleTimer(): void {
+  if (masterPassword !== null) scheduleIdleLock();
+}
 
 export function isInitialized(): boolean {
-  return store.get('sealed') !== null;
+  return store().get('sealed') !== null;
 }
 
 export function isUnlocked(): boolean {
@@ -52,55 +76,60 @@ export function getMasterPassword(): string | null {
   return masterPassword;
 }
 
-export function unlock(password: string): VaultStatus {
-  const sealed = store.get('sealed');
+export async function unlock(password: string): Promise<VaultStatus> {
+  const sealed = store().get('sealed');
   if (sealed === null) {
-    // İlk kurulum: boş kasa bu parolayla mühürlenir.
-    store.set('sealed', sealWithPassword(JSON.stringify({ entries: [] }), password));
+    store().set('sealed', await sealWithPasswordAsync(JSON.stringify({ entries: [] }), password));
   } else {
-    // Mevcut kasa — parola doğrulanır (hatalıysa fırlatır).
-    openWithPassword(sealed, password);
+    await openWithPasswordAsync(sealed, password);
   }
   masterPassword = password;
+  scheduleIdleLock();
   return status();
 }
 
 export function lock(): VaultStatus {
   masterPassword = null;
+  clearIdleTimer();
   return status();
 }
 
-function read(): VaultRecord {
+async function read(): Promise<VaultRecord> {
   if (!masterPassword) throw new Error('Kasa kilitli');
-  const sealed = store.get('sealed');
+  const sealed = store().get('sealed');
   if (sealed === null) return { entries: [] };
-  return JSON.parse(openWithPassword(sealed, masterPassword)) as VaultRecord;
+  // v1 legacy sync payload'ları da desteklenir — async açar, gerekirse sync fallback
+  try {
+    return JSON.parse(await openWithPasswordAsync(sealed, masterPassword)) as VaultRecord;
+  } catch {
+    return JSON.parse(openWithPassword(sealed, masterPassword)) as VaultRecord;
+  }
 }
 
-function write(rec: VaultRecord): void {
+async function write(rec: VaultRecord): Promise<void> {
   if (!masterPassword) throw new Error('Kasa kilitli');
-  store.set('sealed', sealWithPassword(JSON.stringify(rec), masterPassword));
+  store().set('sealed', await sealWithPasswordAsync(JSON.stringify(rec), masterPassword));
 }
 
-export function listEntries(): PasswordEntry[] {
-  return read().entries;
+export async function listEntries(): Promise<PasswordEntry[]> {
+  return (await read()).entries;
 }
 
 export type EntryInput = Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>;
 
-export function addEntry(input: EntryInput): PasswordEntry {
-  const rec = read();
+export async function addEntry(input: EntryInput): Promise<PasswordEntry> {
+  const rec = await read();
   const now = Date.now();
   const entry: PasswordEntry = { ...input, id: randomId(), createdAt: now, updatedAt: now };
   rec.entries.push(entry);
-  write(rec);
+  await write(rec);
   return entry;
 }
 
 export type EntryPatch = Partial<Omit<PasswordEntry, 'id' | 'createdAt'>>;
 
-export function updateEntry(id: string, patch: EntryPatch): PasswordEntry {
-  const rec = read();
+export async function updateEntry(id: string, patch: EntryPatch): Promise<PasswordEntry> {
+  const rec = await read();
   const idx = rec.entries.findIndex((e) => e.id === id);
   if (idx < 0) throw new Error('Kayıt bulunamadı');
   const entry: PasswordEntry = {
@@ -111,12 +140,23 @@ export function updateEntry(id: string, patch: EntryPatch): PasswordEntry {
     updatedAt: Date.now(),
   };
   rec.entries[idx] = entry;
-  write(rec);
+  await write(rec);
   return entry;
 }
 
-export function removeEntry(id: string): void {
-  const rec = read();
+export async function removeEntry(id: string): Promise<void> {
+  const rec = await read();
   rec.entries = rec.entries.filter((e) => e.id !== id);
-  write(rec);
+  await write(rec);
+}
+
+/** Yedekleme: kasa blob'u zaten master-password ile mühürlü — olduğu gibi dışa verilir. */
+export function exportSealedVault(): SealedPayload | null {
+  return store().get('sealed');
+}
+
+/** Yedekten geri yükleme: kasa kilitlenir, kullanıcı master şifresiyle tekrar açar. */
+export function importSealedVault(payload: SealedPayload | null): void {
+  store().set('sealed', payload);
+  masterPassword = null;
 }

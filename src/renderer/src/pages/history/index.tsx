@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { HistoryIcon, Trash, Globe } from '@renderer/components/ui/icons';
 import { useHistory } from '@renderer/store/history';
 import { useTabs } from '@renderer/store/tabs';
+import { EmptyState } from '@renderer/components/ui/empty-state';
 
 // Gezinme geçmişi sayfası (Ctrl+H).
 // Arama, tek kayıt silme ve toplu temizleme. Incognito ziyaretleri
@@ -48,8 +49,12 @@ export default function HistoryPage() {
       {!loaded ? (
         <div className="py-16 text-center text-sm text-fg-muted">Yükleniyor…</div>
       ) : entries.length === 0 ? (
-        <div className="glass rounded-2xl py-16 text-center text-sm text-fg-muted">
-          {query ? 'Eşleşen kayıt yok.' : 'Geçmiş boş.'}
+        <div className="glass rounded-2xl">
+          <EmptyState
+            variant="history"
+            title={query ? 'Eşleşen kayıt yok' : 'Geçmiş boş'}
+            description={query ? 'Arama sorgunu değiştirerek tekrar dene.' : 'Ziyaret ettiğin siteler burada listelenecek.'}
+          />
         </div>
       ) : (
         <div className="glass divide-y divide-white/5 rounded-2xl">

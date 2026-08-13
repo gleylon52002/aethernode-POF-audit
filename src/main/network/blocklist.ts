@@ -141,7 +141,7 @@ const BLOCKED_DOMAINS: readonly string[] = [
   'doubleclick.net',
   'googlesyndication.com',
   'googleadservices.com',
-  'googletagmanager.com',
+  // googletagmanager — Google arama için gerekli; listeden çıkarıldı
   'googletagservices.com',
   'adservice.google.com',
   'admob.com',

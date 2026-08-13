@@ -1,60 +1,118 @@
 import { create } from 'zustand';
+import { showToast } from '@renderer/components/layouts/toast-bus';
+import { playUiSound } from '@renderer/hooks/use-sound';
 
-export type DownloadStatus = 'queued' | 'progressing' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type DownloadStatus =
+  | 'queued'
+  | 'progressing'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export interface DownloadItem {
   id: string;
   filename: string;
   url: string;
-  path?: string;
-  bytesTotal?: number;
-  bytesReceived?: number;
+  path: string;
+  bytesTotal: number;
+  bytesReceived: number;
   status: DownloadStatus;
   startedAt: number;
+  endedAt?: number;
+  mimeType?: string;
+  canResume?: boolean;
+  sha256?: string;
 }
 
 interface DownloadsState {
   items: DownloadItem[];
-  add: (item: Omit<DownloadItem, 'startedAt' | 'status'>) => void;
-  update: (id: string, patch: Partial<DownloadItem>) => void;
-  remove: (id: string) => void;
+  loaded: boolean;
+  load: () => Promise<void>;
+  pause: (id: string) => Promise<void>;
+  resume: (id: string) => Promise<void>;
+  cancel: (id: string) => Promise<void>;
+  open: (id: string) => Promise<void>;
+  openFolder: (id?: string) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  clearCompleted: () => Promise<void>;
+  subscribe: () => () => void;
 }
 
-const STORAGE_KEY = 'aethernode.downloads';
+let lastToastIds = new Set<string>();
 
-function load(): DownloadItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as DownloadItem[]) : [];
-  } catch {
-    return [];
+function applyList(items: DownloadItem[]): void {
+  for (const item of items) {
+    if (
+      (item.status === 'progressing' || item.status === 'queued') &&
+      !lastToastIds.has(item.id)
+    ) {
+      lastToastIds.add(item.id);
+      showToast(`İndirme başladı: ${item.filename}`, 'info', 4500);
+    }
+    if (item.status === 'completed' && !lastToastIds.has(`${item.id}:done`)) {
+      lastToastIds.add(`${item.id}:done`);
+      try { playUiSound('downloadDone'); } catch {}
+      showToast(`İndirme tamamlandı: ${item.filename}`, 'success', 4500);
+    }
   }
-}
-
-function persist(items: DownloadItem[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    /* ignore */
+  // Eski id'leri sınırla
+  if (lastToastIds.size > 400) {
+    lastToastIds = new Set([...lastToastIds].slice(-200));
   }
 }
 
 export const useDownloads = create<DownloadsState>((set, get) => ({
-  items: load(),
-  add: (item) => {
-    const next: DownloadItem = { ...item, startedAt: Date.now(), status: 'progressing' };
-    const items = [next, ...get().items];
-    persist(items);
-    set({ items });
+  items: [],
+  loaded: false,
+
+  load: async () => {
+    const res = await window.aether.downloads.list();
+    if (res.ok) {
+      const items = (res.data as DownloadItem[]) ?? [];
+      // İlk yüklemede toast spam'ini engelle
+      for (const item of items) {
+        lastToastIds.add(item.id);
+        if (item.status === 'completed') lastToastIds.add(`${item.id}:done`);
+      }
+      set({ items, loaded: true });
+    }
   },
-  update: (id, patch) => {
-    const items = get().items.map((d) => (d.id === id ? { ...d, ...patch } : d));
-    persist(items);
-    set({ items });
+
+  pause: async (id) => {
+    await window.aether.downloads.pause(id);
   },
-  remove: (id) => {
-    const items = get().items.filter((d) => d.id !== id);
-    persist(items);
-    set({ items });
+
+  resume: async (id) => {
+    await window.aether.downloads.resume(id);
+  },
+
+  cancel: async (id) => {
+    await window.aether.downloads.cancel(id);
+  },
+
+  open: async (id) => {
+    await window.aether.downloads.open(id);
+  },
+
+  openFolder: async (id) => {
+    await window.aether.downloads.openFolder(id);
+  },
+
+  remove: async (id) => {
+    await window.aether.downloads.remove(id);
+  },
+
+  clearCompleted: async () => {
+    await window.aether.downloads.clearCompleted();
+  },
+
+  subscribe: () => {
+    void get().load();
+    return window.aether.downloads.onUpdated((raw) => {
+      const items = (raw as DownloadItem[]) ?? [];
+      applyList(items);
+      set({ items, loaded: true });
+    });
   },
 }));

@@ -21,13 +21,13 @@ export function registerNotesHandlers(): void {
   defineHandler({
     channel: IPC.notes.list,
     schema: noPayload,
-    handle: (): SecureNote[] => listNotes(),
+    handle: async (): Promise<SecureNote[]> => listNotes(),
   });
 
   defineHandler({
     channel: IPC.notes.add,
     schema: z.object({ title: z.string().min(1), body: z.string() }),
-    handle: ({ title, body }): SecureNote => addNote({ title, body } as NoteInput),
+    handle: async ({ title, body }): Promise<SecureNote> => addNote({ title, body } as NoteInput),
   });
 
   defineHandler({
@@ -36,11 +36,17 @@ export function registerNotesHandlers(): void {
       id: z.string().min(1),
       title: z.string().min(1).optional(),
       body: z.string().optional(),
+      pinned: z.boolean().optional(),
+      color: z.enum(['default', 'purple', 'blue', 'emerald', 'amber', 'rose']).optional(),
+      tags: z.array(z.string().max(24)).max(10).optional(),
     }),
-    handle: ({ id, title, body }): SecureNote => {
+    handle: async ({ id, title, body, pinned, color, tags }): Promise<SecureNote> => {
       const patch: NotePatch = {};
       if (title !== undefined) patch.title = title;
       if (body !== undefined) patch.body = body;
+      if (pinned !== undefined) patch.pinned = pinned;
+      if (color !== undefined) patch.color = color as NotePatch['color'];
+      if (tags !== undefined) patch.tags = tags;
       return updateNote(id, patch);
     },
   });
@@ -48,8 +54,8 @@ export function registerNotesHandlers(): void {
   defineHandler({
     channel: IPC.notes.remove,
     schema: z.object({ id: z.string().min(1) }),
-    handle: ({ id }): boolean => {
-      removeNote(id);
+    handle: async ({ id }): Promise<boolean> => {
+      await removeNote(id);
       return true;
     },
   });

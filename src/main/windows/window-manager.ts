@@ -3,7 +3,6 @@ import { buildAppMenu } from '@main/menu';
 import { createMainWindow as createWin } from './main-window';
 
 // Pencere yöneticisi — tek elden pencere/menü yönetimi.
-// Şimdilik tek ana pencere; Aşama 4'te sekme/pencere yönetimi buraya gelir.
 let main: BrowserWindow | null = null;
 
 export function ensureMainWindow(): BrowserWindow {

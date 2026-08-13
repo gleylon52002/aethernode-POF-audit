@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Close } from '@renderer/components/ui/icons';
 import { getActiveWebviewControl } from './webview-control-bus';
+import { useTabs } from '@renderer/store/tabs';
+import { isWebviewReady } from './webview-registry';
 
 export const FIND_BAR_EVENT = 'aether:toggle-find';
 
@@ -14,6 +16,7 @@ export function FindBar({ open, onClose }: FindBarProps) {
   const [active, setActive] = useState(0);
   const [total, setTotal] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activeId = useTabs((s) => s.activeId);
 
   useEffect(() => {
     if (!open) {
@@ -25,22 +28,60 @@ export function FindBar({ open, onClose }: FindBarProps) {
     }
     inputRef.current?.focus();
     inputRef.current?.select();
-    return getActiveWebviewControl().onFindResult((r) => {
+    const off = getActiveWebviewControl().onFindResult((r) => {
       setActive(r.active);
       setTotal(r.total);
     });
+    return () => off();
   }, [open]);
+
+  // Active tab değiştiğinde sonuçları sıfırla ve aynı sorguyla yeni sekmede ara
+  useEffect(() => {
+    if (!open) return;
+    setActive(0);
+    setTotal(0);
+    if (!query.trim()) return;
+    const t = window.setTimeout(() => {
+      const ready = activeId ? isWebviewReady(activeId) : false;
+      if (!ready && activeId) {
+        // dom henüz hazır değilse kısa gecikmeyle tekrar dene
+        let tries = 0;
+        const retry = window.setInterval(() => {
+          tries++;
+          if (isWebviewReady(activeId!) || tries > 10) {
+            window.clearInterval(retry);
+            getActiveWebviewControl().findInPage(query, { findNext: false });
+          }
+        }, 150);
+        return;
+      }
+      getActiveWebviewControl().findInPage(query, { findNext: false });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [activeId, open]);
 
   useEffect(() => {
     if (!open) return;
-    const ctrl = getActiveWebviewControl();
-    if (query.trim()) ctrl.findInPage(query, { findNext: false });
-    else {
-      ctrl.stopFindInPage();
+    if (query.trim()) {
+      // dom-ready değilse gecikmeli dene
+      if (activeId && !isWebviewReady(activeId)) {
+        let tries = 0;
+        const id = window.setInterval(() => {
+          tries++;
+          if (isWebviewReady(activeId!) || tries > 10) {
+            window.clearInterval(id);
+            getActiveWebviewControl().findInPage(query, { findNext: false });
+          }
+        }, 150);
+        return () => window.clearInterval(id);
+      }
+      getActiveWebviewControl().findInPage(query, { findNext: false });
+    } else {
+      getActiveWebviewControl().stopFindInPage();
       setActive(0);
       setTotal(0);
     }
-  }, [query, open]);
+  }, [query, open, activeId]);
 
   if (!open) return null;
 

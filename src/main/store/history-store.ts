@@ -1,21 +1,25 @@
 import { SecureStore } from './secure-store';
 import type { HistoryEntry } from '@shared/types/history';
+import { getDeviceEncryptionKey } from '@main/services/device-key';
 
-// Gezinme geçmişi deposu — şifreli yerel kalıcılık.
-// Incognito sekmeler renderer tarafında hiç add çağırmadığı için
-// buraya asla düşmez. Kayıt sayısı sınırlandırılır (performans).
-const KEY = process.env.AETHER_KEY ?? 'aethernode-device-key';
 const MAX_ENTRIES = 5000;
 
 interface HistoryShape {
   entries: HistoryEntry[];
 }
 
-const historyStore = new SecureStore<HistoryShape>({
-  name: 'history',
-  encryptionKey: KEY,
-  defaults: { entries: [] },
-});
+let historyStore: SecureStore<HistoryShape> | null = null;
+
+function store(): SecureStore<HistoryShape> {
+  if (!historyStore) {
+    historyStore = new SecureStore<HistoryShape>({
+      name: 'history',
+      encryptionKey: getDeviceEncryptionKey(),
+      defaults: { entries: [] },
+    });
+  }
+  return historyStore;
+}
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -23,7 +27,7 @@ function newId(): string {
 
 export const historyRepo = {
   list(query?: string, limit = 500): HistoryEntry[] {
-    let entries = historyStore.get('entries') ?? [];
+    let entries = store().get('entries') ?? [];
     if (query) {
       const q = query.toLowerCase();
       entries = entries.filter(
@@ -34,8 +38,7 @@ export const historyRepo = {
   },
 
   add(url: string, title: string): HistoryEntry {
-    const entries = historyStore.get('entries') ?? [];
-    // Aynı URL art arda ziyaret edildiyse sayaç artırılır, kayıt öne alınır.
+    const entries = store().get('entries') ?? [];
     const existingIdx = entries.findIndex((e) => e.url === url);
     let entry: HistoryEntry;
     if (existingIdx >= 0) {
@@ -52,19 +55,27 @@ export const historyRepo = {
     }
     const next = [entry, ...entries];
     if (next.length > MAX_ENTRIES) next.length = MAX_ENTRIES;
-    historyStore.set('entries', next);
+    store().set('entries', next);
     return entry;
   },
 
   remove(id: string): void {
-    const entries = historyStore.get('entries') ?? [];
-    historyStore.set(
+    const entries = store().get('entries') ?? [];
+    store().set(
       'entries',
       entries.filter((e) => e.id !== id),
     );
   },
 
   clear(): void {
-    historyStore.set('entries', []);
+    store().set('entries', []);
+  },
+
+  exportAll(): HistoryEntry[] {
+    return store().get('entries') ?? [];
+  },
+
+  importAll(entries: HistoryEntry[]): void {
+    store().set('entries', entries.slice(0, MAX_ENTRIES));
   },
 };
