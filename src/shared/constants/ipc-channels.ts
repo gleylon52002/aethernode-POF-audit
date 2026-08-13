@@ -158,7 +158,11 @@ export const IPC = {
   security: {
     scan: 'aethernode/security/scan',
     permissions: 'aethernode/security/permissions',
+    permissionsRequest: 'aethernode/security/permissionsRequest',
+    permissionsRespond: 'aethernode/security/permissionsRespond',
     breaches: 'aethernode/security/breaches',
+    beforeUnloadAsk: 'aethernode/security/beforeUnloadAsk',
+    beforeUnloadRespond: 'aethernode/security/beforeUnloadRespond',
   },
   // Performans / Kaynak Kontrolü
   performance: {

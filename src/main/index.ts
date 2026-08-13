@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import { ensureMainWindow } from '@main/windows';
 import { registerAllHandlers } from '@main/ipc';
 import { registerSecurityDefaults, enableCookieGuard } from '@main/security';
@@ -165,6 +165,33 @@ app.on('web-contents-created', (_e, contents) => {
 
   contents.on('did-fail-load', (_ev, code, _desc, _url, isMainFrame) => {
     if (!isMainFrame || code === -3) return;
+  });
+
+  contents.on('enter-html-full-screen', () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) win.setFullScreen(true);
+  });
+
+  contents.on('leave-html-full-screen', () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) win.setFullScreen(false);
+  });
+
+  contents.on('will-prevent-unload', (event) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Siteden Ayrıl', 'İptal'],
+      title: 'Siteden Ayrılmak İstiyor Musunuz?',
+      message: 'Siteden ayrılmak istiyor musunuz?',
+      detail: 'Yaptığınız değişiklikler kaydedilmemiş olabilir.',
+      defaultId: 0,
+      cancelId: 1,
+    });
+    const leave = choice === 0;
+    if (leave) {
+      event.preventDefault();
+    }
   });
 
   if (contents.getType() === 'webview') {

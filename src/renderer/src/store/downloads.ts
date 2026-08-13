@@ -53,7 +53,17 @@ function applyList(items: DownloadItem[]): void {
     if (item.status === 'completed' && !lastToastIds.has(`${item.id}:done`)) {
       lastToastIds.add(`${item.id}:done`);
       try { playUiSound('downloadDone'); } catch {}
-      showToast(`İndirme tamamlandı: ${item.filename}`, 'success', 4500);
+      showToast({
+        message: `İndirme tamamlandı: ${item.filename}`,
+        tone: 'success',
+        duration: 6000,
+        action: {
+          label: 'Klasörü Aç',
+          onClick: () => {
+            void window.aether.downloads.openFolder(item.id);
+          }
+        }
+      });
     }
   }
   // Eski id'leri sınırla

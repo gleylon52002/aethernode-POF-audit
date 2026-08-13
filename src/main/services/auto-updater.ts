@@ -48,7 +48,8 @@ export function startAutoUpdater(): void {
 export function installUpdateOnQuit(): void {
   if (!started || is.dev || !updateReady) return;
   try {
-    autoUpdater.quitAndInstall(false, true);
+    // quitAndInstall(isSilent, isForceRunAfter)
+    autoUpdater.quitAndInstall(true, true);
   } catch (e) {
     logger.warn('quitAndInstall başarısız', { err: String(e) });
   }

@@ -25,7 +25,6 @@ async function deepCleanSessions(): Promise<void> {
           'cachestorage',
           'serviceworkers',
           'shadercache',
-          'websql',
           'filesystem',
         ],
       });

@@ -40,6 +40,36 @@ export function attachWebviewContextMenu(contents: WebContents): void {
       template.push({ type: 'separator' });
     }
 
+    if (params.mediaType === 'image') {
+      template.push({
+        label: 'Resmi yeni sekmede aç',
+        click: () => win?.webContents.send('aethernode/guest/openUrl', params.srcURL),
+      });
+      template.push({
+        label: 'Resmi farklı kaydet...',
+        click: () => contents.downloadURL(params.srcURL),
+      });
+      template.push({
+        label: 'Resim adresini kopyala',
+        click: () => clipboard.writeText(params.srcURL),
+      });
+      template.push({ type: 'separator' });
+    } else if (params.mediaType === 'video' || params.mediaType === 'audio') {
+      template.push({
+        label: 'Medyayı yeni sekmede aç',
+        click: () => win?.webContents.send('aethernode/guest/openUrl', params.srcURL),
+      });
+      template.push({
+        label: 'Medyayı farklı kaydet...',
+        click: () => contents.downloadURL(params.srcURL),
+      });
+      template.push({
+        label: 'Medya adresini kopyala',
+        click: () => clipboard.writeText(params.srcURL),
+      });
+      template.push({ type: 'separator' });
+    }
+
     if (params.selectionText?.trim()) {
       const text = params.selectionText.trim();
       template.push({ label: 'Kopyala', role: 'copy' });

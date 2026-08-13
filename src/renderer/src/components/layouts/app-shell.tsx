@@ -27,6 +27,7 @@ import { useWorkspaces } from '@renderer/store/workspaces';
 import { getActiveWebviewControl } from './webview-control-bus';
 import { TRANSLATE_EVENT, LITTLE_ARC_EVENT } from './command-palette';
 import { RelaxPanel } from './relax-panel';
+import { PermissionPopup } from './permission-popup';
 
 const DISCARD_IDLE_MS = 15 * 60 * 1000;
 const DISCARD_TICK_MS = 60 * 1000;
@@ -227,6 +228,7 @@ export function AppShell() {
               <TabSearch />
               <CommandPalette />
               <ShieldPanel />
+              <PermissionPopup />
             </div>
           </div>
         </main>

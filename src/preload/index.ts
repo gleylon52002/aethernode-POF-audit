@@ -17,6 +17,10 @@ function on<T>(channel: string, listener: (payload: T) => void): () => void {
   return () => ipcRenderer.off(channel, handler);
 }
 
+function send(channel: string, ...args: unknown[]): void {
+  ipcRenderer.send(channel, ...args);
+}
+
 const api = {
   app: {
     version: () => invoke<string>(IPC.app.version),
@@ -181,6 +185,7 @@ const api = {
     ipcRenderer.on(channel, handler);
     return () => ipcRenderer.off(channel, handler);
   },
+  send,
 };
 
 contextBridge.exposeInMainWorld('aether', api);

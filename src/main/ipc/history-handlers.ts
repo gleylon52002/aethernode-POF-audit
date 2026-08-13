@@ -7,7 +7,7 @@ const VISIT_DEDUPE_MS = 45_000;
 const recentVisits = new Map<string, number>();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function shouldEmitVisit(page: string): boolean {
+export function shouldEmitVisit(page: string): boolean {
   const now = Date.now();
   const prev = recentVisits.get(page) ?? 0;
   if (now - prev < VISIT_DEDUPE_MS) return false;
@@ -22,7 +22,7 @@ function shouldEmitVisit(page: string): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function isSearchUrl(url: string): string | null {
+export function isSearchUrl(url: string): string | null {
   try {
     const u = new URL(url);
     const q =

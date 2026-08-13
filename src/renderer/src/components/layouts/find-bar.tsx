@@ -63,10 +63,10 @@ export function FindBar({ open, onClose }: FindBarProps) {
   useEffect(() => {
     if (!open) return;
     if (query.trim()) {
-      // dom-ready değilse gecikmeli dene
       if (activeId && !isWebviewReady(activeId)) {
+        let id: number;
         let tries = 0;
-        const id = window.setInterval(() => {
+        id = window.setInterval(() => {
           tries++;
           if (isWebviewReady(activeId!) || tries > 10) {
             window.clearInterval(id);
@@ -77,11 +77,12 @@ export function FindBar({ open, onClose }: FindBarProps) {
       }
       getActiveWebviewControl().findInPage(query, { findNext: false });
     } else {
-      getActiveWebviewControl().stopFindInPage();
+      getActiveWebviewControl().stopFindInPage('clearSelection');
       setActive(0);
       setTotal(0);
     }
-  }, [query, open, activeId]);
+    return undefined;
+  }, [query, activeId, open]);
 
   if (!open) return null;
 
