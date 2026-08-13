@@ -1,7 +1,7 @@
 import { app, clipboard, session } from 'electron';
 import { rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { GUEST_PARTITIONS, getAllPartitions } from '@main/network/guard';
+import { getAllPartitions } from '@main/network/guard';
 import { historyRepo, settingsRepo } from '@main/store';
 import { logger } from '@main/utils/logger';
 

@@ -2,13 +2,11 @@ import { defineHandler, noPayload } from '@main/ipc/router';
 import { IPC } from '@shared/constants';
 import { settingsRepo } from '@main/store';
 import { applySecureDns, networkGuard } from '@main/network';
+import { reapplyWebRtcToAll } from '@main/security/webrtc-guard';
+import { setVaultAutoLockMinutes } from '@main/services/vault';
+import { appSettingsSchema } from '@shared/schemas/settings';
 import type { AppSettings } from '@shared/types/settings';
-
-// Ayarlar için Zod şeması (tam koruma). Doğrulama başarısızsa renderer
-// ayarlar değiştirilmez; bu, bozuk payload'ın kalıcı hale gelmesini önler.
 import { z } from 'zod';
-
-const settingsSchema: z.ZodType<AppSettings> = z.any() as z.ZodType<AppSettings>;
 
 export function registerSettingsHandlers(): void {
   defineHandler({
@@ -28,13 +26,15 @@ export function registerSettingsHandlers(): void {
 
   defineHandler({
     channel: IPC.settings.set,
-    schema: settingsSchema,
+    schema: appSettingsSchema,
     handle: (next: AppSettings) => {
+      // const prev = settingsRepo.get();
       settingsRepo.set(next);
-      // Ağ katmanına anında yansıt — yeniden başlatma gerekmez.
       const merged = settingsRepo.get();
       networkGuard.updateConfig(merged);
       applySecureDns(merged);
+      reapplyWebRtcToAll();
+      setVaultAutoLockMinutes(merged.security.vaultAutoLockMinutes ?? 5);
       return true;
     },
   });
@@ -47,6 +47,8 @@ export function registerSettingsHandlers(): void {
       const merged = settingsRepo.get();
       networkGuard.updateConfig(merged);
       applySecureDns(merged);
+      reapplyWebRtcToAll();
+      setVaultAutoLockMinutes(merged.security.vaultAutoLockMinutes ?? 5);
       return true;
     },
   });

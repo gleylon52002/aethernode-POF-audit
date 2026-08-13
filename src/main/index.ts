@@ -152,7 +152,6 @@ app.on('web-contents-created', (_e, contents) => {
     const url = contents.getURL();
     if (!/^https?:/i.test(url)) return;
     const page = parsePage(url);
-    const prev = (contents as unknown as { __anRef?: string }).__anRef;
     const loadStarted = Date.now();
 
     dwellByWc.set(contents.id, {
