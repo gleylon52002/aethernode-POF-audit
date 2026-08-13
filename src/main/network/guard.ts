@@ -1,13 +1,18 @@
 import {
   session,
+  webContents,
   type OnBeforeRequestListenerDetails,
   type Session,
 } from 'electron';
 import { EventEmitter } from 'node:events';
 import { logger } from '@main/utils/logger';
-import { isBlockedDomain } from './blocklist';
 import { cleanTrackingParams } from '@shared/utils';
 import type { AppSettings } from '@shared/types/settings';
+import { shouldBlockRequest, enableFilterEngine, filterStats, updateFilterLists } from './filter-engine';
+import { isStunOrTurnHost } from '@main/security/webrtc-guard';
+
+// re-export for callers
+export { enableFilterEngine, filterStats, updateFilterLists };
 
 // YouTube reklam istekleri — googlevideo playback'e ASLA dokunma
 // (içerik videosu aynı CDN'den gelir; agresif filtre videoyu geciktirir).
@@ -88,6 +93,11 @@ interface GuardConfig {
   blockMixedContent: boolean;
   urlCleanerEnabled: boolean;
   doNotTrack: boolean;
+  /** Uniformity fingerprint modu — Client Hints başlıkları sabitlenir */
+  uniformity: boolean;
+  /** WebRTC STUN/TURN sunucularını engelle (IP sızıntısı) */
+  blockStun: boolean;
+  webrtcAllowedHosts: string[];
 }
 
 const DEFAULT_CONFIG: GuardConfig = {
@@ -96,10 +106,35 @@ const DEFAULT_CONFIG: GuardConfig = {
   blockMixedContent: true,
   urlCleanerEnabled: true,
   doNotTrack: true,
+  uniformity: false,
+  blockStun: true,
+  webrtcAllowedHosts: [] as string[],
 };
 
-// Sekme içeriklerinin kullandığı partition'lar.
+// Sekme içeriklerinin kullandığı sabit partition'lar.
 export const GUEST_PARTITIONS = ['persist:default', 'persist:bank', 'incognito'] as const;
+
+/**
+ * Dinamik partition kayıt defteri.
+ * persist:tab:*, persist:ct:*, persist:pwa-* gibi runtime'da oluşturulan
+ * partition adlarını takip eder. Temizlik fonksiyonları bu listeyi kullanır.
+ */
+const _dynamicPartitions = new Set<string>();
+
+export function registerDynamicPartition(name: string): void {
+  if (name && name.startsWith('persist:') && !GUEST_PARTITIONS.includes(name as typeof GUEST_PARTITIONS[number])) {
+    _dynamicPartitions.add(name);
+  }
+}
+
+export function unregisterDynamicPartition(name: string): void {
+  _dynamicPartitions.delete(name);
+}
+
+/** Sabit + dinamik tüm partition isimlerini döndürür. */
+export function getAllPartitions(): string[] {
+  return [...GUEST_PARTITIONS, ..._dynamicPartitions];
+}
 
 // Loopback / yerel adresler HTTPS zorlama ve engelleme dışıdır
 // (dev sunucusu, yerel servisler, router arayüzleri).
@@ -114,12 +149,33 @@ function isLocalHost(hostname: string): boolean {
   );
 }
 
+function normalizeHost(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '').trim();
+}
+
+/** İsteğin geldiği sekme sayfasının host'u (üst çerçeve). */
+function pageHostFromDetails(details: OnBeforeRequestListenerDetails): string | null {
+  try {
+    const id = details.webContentsId;
+    if (typeof id !== 'number') return null;
+    const wc = webContents.fromId(id);
+    if (!wc || wc.isDestroyed()) return null;
+    const pageUrl = wc.getURL();
+    if (!pageUrl || !/^https?:\/\//i.test(pageUrl)) return null;
+    return normalizeHost(new URL(pageUrl).hostname);
+  } catch {
+    return null;
+  }
+}
+
 class NetworkGuard extends EventEmitter {
   private attached = new WeakSet<Session>();
   private inspectorOn = false;
   private counter = 0;
   private blockedTotal = 0;
   private config: GuardConfig = { ...DEFAULT_CONFIG };
+  /** uBlock tarzı: bu sitelerde reklam/izleyici engeli kapalı (yalnızca hostname) */
+  private pausedHosts = new Set<string>();
 
   // Uygulama açılışında çağrılır: tüm ilgili session'lara kancaları bağlar.
   enable(): void {
@@ -148,6 +204,32 @@ class NetworkGuard extends EventEmitter {
     return this.blockedTotal;
   }
 
+  /** Host için engellemeyi durdur/aç (normalize edilmiş hostname). */
+  setSiteProtectionPaused(hostname: string, paused: boolean): void {
+    const h = normalizeHost(hostname);
+    if (!h) return;
+    if (paused) this.pausedHosts.add(h);
+    else this.pausedHosts.delete(h);
+  }
+
+  isSiteProtectionPaused(hostname: string): boolean {
+    const h = normalizeHost(hostname);
+    if (!h) return false;
+    for (const p of this.pausedHosts) {
+      if (h === p || h.endsWith('.' + p)) return true;
+    }
+    return false;
+  }
+
+  listPausedSites(): string[] {
+    return [...this.pausedHosts];
+  }
+
+  /** Dinamik sekme partition'ları (per-tab isolation) için. */
+  attachPartition(partition: string): void {
+    this.attach(session.fromPartition(partition));
+  }
+
   updateConfig(settings: AppSettings): void {
     this.config = {
       trackersEnabled: settings.privacy.trackers.enabled,
@@ -156,7 +238,21 @@ class NetworkGuard extends EventEmitter {
         settings.privacy.https.enabled && settings.privacy.https.blockMixedContent,
       urlCleanerEnabled: settings.privacy.urlCleaner.enabled,
       doNotTrack: settings.general.doNotTrack,
+      uniformity:
+        settings.privacy.fingerprint.enabled &&
+        settings.privacy.fingerprint.mode === 'uniformity',
+      blockStun: settings.privacy.webrtc.enabled,
+      webrtcAllowedHosts: [...(settings.privacy.webrtc.allowedHosts ?? [])].map(normalizeHost).filter(Boolean),
     };
+  }
+
+  isWebRtcAllowedForHost(hostname: string): boolean {
+    const h = normalizeHost(hostname);
+    if (!h) return false;
+    for (const a of this.config.webrtcAllowedHosts) {
+      if (h === a || h.endsWith('.' + a)) return true;
+    }
+    return false;
   }
 
   private attach(ses: Session): void {
@@ -170,6 +266,16 @@ class NetworkGuard extends EventEmitter {
       if (this.config.doNotTrack) {
         headers['DNT'] = '1';
         headers['Sec-GPC'] = '1';
+      }
+      if (this.config.uniformity) {
+        // Client Hints — tüm kullanıcılarda aynı standart değerler
+        for (const k of Object.keys(headers)) {
+          if (/^sec-ch-ua/i.test(k)) delete headers[k];
+        }
+        headers['Sec-CH-UA'] =
+          '"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"';
+        headers['Sec-CH-UA-Mobile'] = '?0';
+        headers['Sec-CH-UA-Platform'] = '"Windows"';
       }
       callback({ requestHeaders: headers });
     });
@@ -212,15 +318,44 @@ class NetworkGuard extends EventEmitter {
       return;
     }
 
+    // 0. WebRTC STUN/TURN — gerçek IP sızıntısını kes (Google STUN vb.)
+    // Site bazlı istisna: Meet/Zoom/Discord gibi siteler için STUN'e izin ver
+    if (this.config.blockStun && isStunOrTurnHost(parsed.hostname)) {
+      const pageHost = pageHostFromDetails(details);
+      if (pageHost && this.isWebRtcAllowedForHost(pageHost)) {
+        callback({});
+        return;
+      }
+      this.blockedTotal += 1;
+      this.emit('blocked', {
+        url,
+        host: parsed.hostname,
+        resourceType,
+        totalBlocked: this.blockedTotal,
+        at: Date.now(),
+      } satisfies BlockedRequest);
+      callback({ cancel: true });
+      return;
+    }
+
     // 1. Tracker/reklam engelleme (ana çerçeve hariç).
-    //    Domain listesi + bilinen reklam script yolu kalıpları.
-    if (this.config.trackersEnabled && !isMainFrame) {
+    //    Bu sitede koruma duraklatıldıysa atlanır (uBlock "site için kapat").
+    const pageHost = pageHostFromDetails(details);
+    const sitePaused = pageHost ? this.isSiteProtectionPaused(pageHost) : false;
+    if (this.config.trackersEnabled && !isMainFrame && !sitePaused) {
       const path = parsed.pathname.toLowerCase();
+      // Dar path kuralları — /ads/ gibi geniş kalıplar site CSS/JS'ini kırıyordu
       const adPath =
-        /\/(pagead2?|ads)\.js$/i.test(path) ||
-        /\/widget\/ads\./i.test(path);
+        /\/(pagead2?|show_ads|adserver)\.js$/i.test(path) ||
+        /\/widget\/ads\./i.test(path) ||
+        /\/pagead\//i.test(path);
       const ytAd = isYouTubeAdRequest(url, parsed.hostname, path);
-      if (isBlockedDomain(parsed.hostname) || adPath || ytAd) {
+      const domainHit = shouldBlockRequest(
+        parsed.hostname,
+        resourceType,
+        details.referrer || '',
+      );
+      if (domainHit || adPath || ytAd) {
         this.blockedTotal += 1;
         const blocked: BlockedRequest = {
           url,
@@ -243,14 +378,29 @@ class NetworkGuard extends EventEmitter {
     }
 
     // 3. Karışık içerik — https sayfadan gelen http alt kaynak iptal edilir.
+    // Referrer boş olabilir (strict-origin) — initiator ve webContents URL de kontrol edilir, fail-closed değil fail-open.
     if (
       this.config.blockMixedContent &&
       !isMainFrame &&
-      parsed.protocol === 'http:' &&
-      details.referrer.startsWith('https://')
+      parsed.protocol === 'http:'
     ) {
-      callback({ cancel: true });
-      return;
+      const ref = details.referrer || '';
+      const init = (details as unknown as { initiator?: string }).initiator || '';
+      const pageHostForMixed = pageHostFromDetails(details);
+      const isHttpsContext =
+        ref.startsWith('https://') ||
+        init.startsWith('https://') ||
+        (pageHostForMixed !== null && details.webContentsId !== undefined && (() => {
+          try {
+            const wc = webContents.fromId(details.webContentsId);
+            const pageUrl = wc?.getURL() || '';
+            return pageUrl.startsWith('https://');
+          } catch { return false; }
+        })());
+      if (isHttpsContext) {
+        callback({ cancel: true });
+        return;
+      }
     }
 
     // 4. Tracking parametresi temizleme (ana çerçeve).
