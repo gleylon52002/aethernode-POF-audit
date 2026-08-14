@@ -172,6 +172,19 @@ npm run format       # Prettier
 - Harici bağlantılar sistem tarayıcısında açılır.
 - Renderer CSP katı; yalnızca `'self'`.
 
+## Proje Sitesi ve İndirme
+[https://aethernodevpn.com/POF/](https://aethernodevpn.com/POF/)
+
 ## Lisans
 
-UNLICENSED — AetherNode.
+**AetherNode POF Source-Available License**
+
+Bu projenin kaynak kodu herkese açıktır ve topluluğun kod katkılarına (Pull Request, hata düzeltmeleri vb.) izin verilmektedir.
+
+**Yasak olan durumlar:**
+- Kodu derleyip veya ismini/logosunu (rebranding) değiştirerek kendi ürününüz gibi dağıtmak.
+- Ticari amaçlı bir sürümünü oluşturup yayınlamak veya satmak.
+
+Detaylı bilgi için lütfen [LICENSE.md](LICENSE.md) dosyasına göz atın.
+
+Copyright © 2026 AetherNode Systems. Tüm hakları saklıdır.
