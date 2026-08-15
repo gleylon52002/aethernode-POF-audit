@@ -44,6 +44,8 @@ export interface TabSnapshot {
   discarded?: boolean;
   /** Yeni sekme manzarası indeksi (sekme başına sabit) */
   wallpaperIndex?: number;
+  /** Kullan-at (Burner) sekme bayrağı */
+  isBurner?: boolean;
   createdAt: number;
   lastActiveAt: number;
 }

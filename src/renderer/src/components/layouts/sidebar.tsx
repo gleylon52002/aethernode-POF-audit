@@ -44,6 +44,7 @@ const items: Item[] = [
   { route: 'passwords', label: 'Şifreler', icon: Key },
   { route: 'notes', label: 'Güvenli Notlar', icon: Note },
   { route: 'settings', label: 'Ayarlar', icon: SettingsIcon },
+  { route: 'help', label: 'Kullanım & Bilgi', icon: Note },
 ];
 
 export function Sidebar() {

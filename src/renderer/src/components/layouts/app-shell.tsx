@@ -12,7 +12,7 @@ import { CommandPalette } from './command-palette';
 import { ShieldPanel } from './shield-panel';
 import { WorkspaceSwitcher } from './workspace-switcher';
 import { BankFrame } from './bank-frame';
-import { ToastHost, ToastProvider } from './toast-host';
+import { ToastHost } from './toast-host';
 import { WelcomeScreen } from './welcome-screen';
 import { VpnPromoOverlay } from '@renderer/components/promo/AetherNodePromoCard';
 import { showToast } from './toast-bus';
@@ -32,11 +32,24 @@ import { PermissionPopup } from './permission-popup';
 const DISCARD_IDLE_MS = 15 * 60 * 1000;
 const DISCARD_TICK_MS = 60 * 1000;
 
+import { CamouflageOverlay } from './camouflage-overlay';
+import { useAuraTheme } from '@renderer/hooks/use-aura-theme';
+
 export function AppShell() {
   useShortcuts();
   useVaultIdle();
+  useAuraTheme();
+  
   const [findOpen, setFindOpen] = useFindBarOpen();
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
+  const [camouflageActive, setCamouflageActive] = useState(false);
+
+  useEffect(() => {
+    const onCamouflage = () => setCamouflageActive(prev => !prev);
+    window.addEventListener('aether:camouflage', onCamouflage);
+    return () => window.removeEventListener('aether:camouflage', onCamouflage);
+  }, []);
+
   const memorySaver = useSettings((s) => s.settings.general.memorySaver);
   const autoArchive = useSettings((s) => s.settings.general.autoArchiveTabs);
   const archiveMinutes = useSettings((s) => s.settings.general.autoArchiveMinutes);
@@ -211,8 +224,14 @@ export function AppShell() {
   const vertical = tabLayout === 'vertical';
 
   return (
-    <div className="relative flex h-full flex-col">
-      <div className="flex min-h-0 flex-1">
+    <div className="relative flex h-full flex-col bg-bg">
+      {/* Arka planda global Aura Glow efekti */}
+      <div 
+        className="pointer-events-none absolute inset-0 z-0 opacity-10 blur-[120px] transition-colors duration-1000 ease-out" 
+        style={{ backgroundColor: 'var(--brand-500)' }} 
+      />
+      
+      <div className="flex min-h-0 flex-1 relative z-10">
         <Sidebar />
         <main className="relative flex min-w-0 flex-1 flex-col">
           <TabBar showTabs={!vertical} />
@@ -239,6 +258,7 @@ export function AppShell() {
       <RelaxPanel />
       {showWelcomeScreen && <WelcomeScreen onDone={() => setShowWelcomeScreen(false)} />}
       <VpnPromoOverlay />
+      <CamouflageOverlay active={camouflageActive} onExit={() => setCamouflageActive(false)} />
     </div>
   );
 }

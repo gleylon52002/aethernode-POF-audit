@@ -95,7 +95,7 @@ export default function SettingsPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const matches = (text: string) => !search || text.toLowerCase().includes(search.toLowerCase());
+  
 
   return (
     <div className="mx-auto max-w-3xl p-6" data-settings-page>

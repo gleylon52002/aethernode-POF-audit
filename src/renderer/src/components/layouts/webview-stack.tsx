@@ -52,15 +52,17 @@ export function WebviewStack() {
         const isVisible = isPrimary || isSecondary;
         const isIncognito = t.profileId === 'incognito';
         const isBank = bankModeEnabled && isBankUrl(t.url);
-        const partition = isIncognito
-          ? 'incognito'
-          : isBank
-            ? 'persist:bank'
-            : t.containerId
-              ? `persist:ct:${t.containerId}`
-              : perTabIsolation
-                ? `persist:tab:${t.id}`
-                : 'persist:default';
+        const partition = t.isBurner
+          ? `burner-${t.id}`
+          : isIncognito
+            ? 'incognito'
+            : isBank
+              ? 'persist:bank'
+              : t.containerId
+                ? `persist:ct:${t.containerId}`
+                : perTabIsolation
+                  ? `persist:tab:${t.id}`
+                  : 'persist:default';
 
         if (t.discarded && !isVisible) {
           return null;
@@ -82,7 +84,7 @@ export function WebviewStack() {
             readerMode={!!t.readerMode}
             onUpdate={(patch) => update(t.id, patch)}
             onVisit={(url, title) => {
-              if (!isIncognito) recordHistory(url, title);
+              if (!isIncognito && !t.isBurner) recordHistory(url, title);
             }}
           />
         );
@@ -417,7 +419,7 @@ function TabWebview({
       // eslint-disable-next-line react/no-unknown-property
       webpreferences="contextIsolation=yes,plugins=yes,javascript=yes,webSecurity=yes"
       // eslint-disable-next-line react/no-unknown-property
-      plugins="true"
+      plugins
       {...(userAgent ? { useragent: userAgent } : {})}
       style={style}
     />

@@ -9,7 +9,15 @@ import * as crypto from 'crypto';
 const attached = new WeakSet<Session>();
 
 // Zararsız, video/oyun deneyimi için gerekli izinler — gizlilik etkisi yok.
-const HARMLESS_PERMISSIONS = new Set(['fullscreen', 'pointerLock', 'keyboardLock']);
+const HARMLESS_PERMISSIONS = new Set([
+  'fullscreen', 
+  'pointerLock', 
+  'keyboardLock', 
+  'storage-access', 
+  'protectedMediaIdentifier',
+  'media', // Bazı DRM'ler medya erişimi de isteyebilir
+  'storageAccess', // Electron'un bazı sürümleri camelCase kullanır
+]);
 
 // Bekleyen izin isteklerini saklamak için map (id -> callback)
 const pendingPermissions = new Map<string, (isAllowed: boolean) => void>();
@@ -50,11 +58,9 @@ function harden(ses: Session): void {
 
   // Aygıt seçme (kamera, mikrofon) için ek olarak:
   ses.setDevicePermissionHandler(() => true);
-  ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-    if (permission === 'media') {
-      return true; // Asıl yetki setPermissionRequestHandler'dan alınacak
-    }
-    return false;
+  ses.setPermissionCheckHandler(() => {
+    // Asıl yetki kontrolü setPermissionRequestHandler'da yapılıyor
+    return true;
   });
 
   try {

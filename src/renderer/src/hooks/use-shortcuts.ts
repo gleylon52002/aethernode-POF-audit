@@ -241,6 +241,10 @@ async function dispatch(action: string, arg?: number): Promise<void> {
       tabs.resetAll();
       break;
     }
+    case 'camouflage': {
+      window.dispatchEvent(new CustomEvent('aether:camouflage'));
+      break;
+    }
     default:
       break;
   }

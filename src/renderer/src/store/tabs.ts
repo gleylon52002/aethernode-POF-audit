@@ -24,6 +24,7 @@ interface TabsState {
   incognito: boolean;
   closedStack: ClosedTab[];
   open: (url?: string, profileId?: string) => TabId;
+  openBurner: (url?: string) => TabId;
   /** Yeni sekmede aç ama odak mevcut sekmede kalsın (Ctrl+tık) */
   openBackground: (url?: string, profileId?: string) => TabId;
   /** Sekme sırasını değiştir (sürükle-bırak) */
@@ -148,6 +149,13 @@ export const useTabs = create<TabsState>((set, get) => ({
     } catch {
       /* store henüz yoksa yoksay */
     }
+    set((s) => ({ tabs: [...s.tabs, tab], activeId: tab.id }));
+    playUiSound('tabOpen');
+    return tab.id;
+  },
+  openBurner: (url) => {
+    const tab = makeTab(url, 'burner');
+    tab.isBurner = true;
     set((s) => ({ tabs: [...s.tabs, tab], activeId: tab.id }));
     playUiSound('tabOpen');
     return tab.id;

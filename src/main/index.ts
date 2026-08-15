@@ -25,14 +25,13 @@ import { performanceController } from '@main/services/performance-controller';
 process.on('uncaughtException', (err) => {
   logger.error('UNCAUGHT EXCEPTION (yakalandı, process devam ediyor)', {
     message: err.message,
-    stack: err.stack?.slice(0, 500),
+    stack: err.stack,
   });
-  // process.exit(1) ÇAĞIRMA — uygulama devam etsin
 });
 
 process.on('unhandledRejection', (reason) => {
   const msg = reason instanceof Error ? reason.message : String(reason);
-  const stack = reason instanceof Error ? reason.stack?.slice(0, 500) : '';
+  const stack = reason instanceof Error ? reason.stack : '';
   logger.error('UNHANDLED REJECTION (yakalandı, process devam ediyor)', { message: msg, stack });
 });
 
@@ -40,6 +39,10 @@ process.on('unhandledRejection', (reason) => {
 if (app.isPackaged) {
   app.commandLine.appendSwitch('disable-features', 'ElectronSerialChooser');
 }
+
+// DRM / Widevine desteği (Netflix, Spotify vb. için)
+app.commandLine.appendSwitch('enable-widevine');
+app.commandLine.appendSwitch('enable-features', 'Widevine');
 
 appendWebRtcCommandLineSwitches();
 
@@ -70,7 +73,16 @@ function flushDwell(wcId: number): void {
   if (ms < 1_500) return; // gürültü
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  try {
+    const { components } = require('electron');
+    await components.whenReady();
+    const status = await components.status();
+    logger.info('Electron Components yüklendi', { status });
+  } catch (err) {
+    logger.warn('Components (Widevine vb.) yüklenemedi', { err });
+  }
+  
   getDeviceEncryptionKey();
   const settings = settingsRepo.get();
   registerSecurityDefaults();

@@ -597,15 +597,32 @@ export function AddressBar() {
             e.preventDefault();
             window.dispatchEvent(new CustomEvent('aether:shield-panel'));
           }}
-          className={`flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition ${
+          className={`group relative flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[11.5px] font-semibold tracking-wide transition-all duration-300 ${
             sitePaused
-              ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30'
-              : 'bg-success/10 text-success hover:bg-success/20'
+              ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20'
+              : 'bg-brand/10 text-brand hover:bg-brand/20 border border-brand/30 shadow-[0_0_12px_rgba(124,58,237,0.25)]'
           }`}
           aria-label={sitePaused ? 'Korumayı aç' : 'Bu sitede korumayı durdur'}
         >
-          <Shield className="h-3.5 w-3.5 shrink-0" />
-          <span>{sitePaused ? 'Kapalı' : blockedTotal}</span>
+          {/* Sürekli hafif glow efekti (arkada) */}
+          {!sitePaused && (
+            <div className="absolute inset-0 -z-10 animate-pulse-soft rounded-lg bg-brand/20 blur-md"></div>
+          )}
+          
+          <Shield className={`h-3.5 w-3.5 shrink-0 ${!sitePaused ? 'drop-shadow-[0_0_5px_rgba(124,58,237,0.6)]' : ''}`} />
+          
+          {sitePaused ? (
+            <span>Kapalı</span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              Koruma Aktif
+              {blockedTotal > 0 && (
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand/20 px-1 text-[9px] font-bold text-brand ring-1 ring-brand/40">
+                  {blockedTotal}
+                </span>
+              )}
+            </span>
+          )}
         </button>
       </Tooltip>
 

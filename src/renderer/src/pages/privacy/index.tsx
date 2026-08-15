@@ -60,8 +60,8 @@ export default function PrivacyPage() {
 
       <Section title="Fingerprint" description="Tarayıcı parmak izini maskeleme / kalabalıkta kaybolma.">
         <Row
-          label="Fingerprint koruması"
-          description="Master anahtar — tüm alt spoofing alanlarını etkiler."
+          label="Bukalemun (Chameleon) Parmak İzi Koruması"
+          description="Master anahtar — tüm alt spoofing alanlarını (Canvas, WebGL, Audio vb.) etkiler."
         >
           <Switch
             checked={p.fingerprint.enabled}

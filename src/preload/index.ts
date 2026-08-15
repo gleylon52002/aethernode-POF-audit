@@ -28,6 +28,7 @@ const api = {
     quit: () => invoke<boolean>(IPC.app.quit),
     isDev: () => invoke<boolean>('aethernode/app/isDev'),
     setAsDefault: () => invoke<boolean>(IPC.app.setAsDefault),
+    fetchFavicon: (url: string) => invoke<string>('aethernode/app/fetchFavicon', url),
   },
   window: {
     minimize: () => invoke<boolean>(IPC.window.minimize),
