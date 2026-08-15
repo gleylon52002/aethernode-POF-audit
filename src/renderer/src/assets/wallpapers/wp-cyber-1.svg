@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+  <defs>
+    <radialGradient id="cyber-bg" cx="50%" cy="100%" r="100%" fx="50%" fy="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#38BDF8" stroke-width="0.5" stroke-opacity="0.2"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#cyber-bg)"/>
+  <rect width="1920" height="1080" fill="url(#grid)" style="transform: perspective(500px) rotateX(60deg) scale(2); transform-origin: center bottom;"/>
+  <!-- Glowing horizon -->
+  <ellipse cx="960" cy="1080" rx="1200" ry="200" fill="#38BDF8" opacity="0.15" filter="blur(40px)"/>
+  <path d="M0,1080 L1920,1080 L1920,1000 L0,1000 Z" fill="url(#cyber-bg)" opacity="0.8"/>
+</svg>

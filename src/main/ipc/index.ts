@@ -18,6 +18,8 @@ import { registerRelayHandlers } from './relay-handlers';
 import { registerPwaHandlers } from './pwa-handlers';
 import { registerPerformanceHandlers } from './performance-handlers';
 
+import { registerUpdaterIpcHandlers } from '@main/services/auto-updater';
+
 export { registerIpcHandlers };
 
 export function registerAllHandlers(): void {
@@ -39,5 +41,6 @@ export function registerAllHandlers(): void {
   registerRelayHandlers();
   registerPwaHandlers();
   registerPerformanceHandlers();
+  registerUpdaterIpcHandlers();
   registerIpcHandlers();
 }

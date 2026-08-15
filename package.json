@@ -1,6 +1,6 @@
 {
   "name": "aethernode-secure-browser",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "AetherNode Secure Browser — privacy-first desktop browser.",
   "author": "AetherNode",
   "license": "UNLICENSED",
@@ -64,6 +64,32 @@
     "appId": "com.aethernode.browser",
     "productName": "AetherNode POF",
     "copyright": "Copyright © AetherNode",
+    "protocols": [
+      {
+        "name": "HTTP Protocol",
+        "schemes": [
+          "http"
+        ]
+      },
+      {
+        "name": "HTTPS Protocol",
+        "schemes": [
+          "https"
+        ]
+      }
+    ],
+    "fileAssociations": [
+      {
+        "ext": "html",
+        "name": "HTML Document",
+        "role": "Viewer"
+      },
+      {
+        "ext": "htm",
+        "name": "HTM Document",
+        "role": "Viewer"
+      }
+    ],
     "directories": {
       "output": "release",
       "buildResources": "resources"

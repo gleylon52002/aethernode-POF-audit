@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+  <rect width="1920" height="1080" fill="#450A0A"/>
+  <ellipse cx="1060" cy="300" rx="800" ry="200" fill="#FBBF24" opacity="0.2" filter="blur(80px)" transform="rotate(-20 500 300)"/>
+  <ellipse cx="1120" cy="800" rx="900" ry="250" fill="#991B1B" opacity="0.3" filter="blur(100px)" transform="rotate(15 1400 800)"/></svg>

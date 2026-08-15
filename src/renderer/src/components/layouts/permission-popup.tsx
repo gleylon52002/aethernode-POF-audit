@@ -62,7 +62,7 @@ export function PermissionPopup() {
               Reddet
             </Button>
             <Button
-              variant="default"
+              variant="brand"
               size="sm"
               onClick={() => handleRespond(req.id, true)}
               className="bg-brand hover:bg-brand/90 text-white"

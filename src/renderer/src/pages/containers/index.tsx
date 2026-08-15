@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useContainers, getContainerForHost } from '@renderer/store/containers';
+import { useContainers } from '@renderer/store/containers';
 import type { TabGroupColor } from '@shared/types/tabs';
 
 const COLORS: TabGroupColor[] = [

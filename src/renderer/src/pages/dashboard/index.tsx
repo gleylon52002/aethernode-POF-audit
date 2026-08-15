@@ -39,13 +39,79 @@ import wpLavender4 from '@renderer/assets/wallpapers/wp-lavender-4.svg';
 import wpDawn1 from '@renderer/assets/wallpapers/wp-dawn-1.svg';
 import wpNightcity1 from '@renderer/assets/wallpapers/wp-nightcity-1.svg';
 import wpPolar1 from '@renderer/assets/wallpapers/wp-polar-1.svg';
+import wpCyber1 from '@renderer/assets/wallpapers/wp-cyber-1.svg';
+import wpAbstract1 from '@renderer/assets/wallpapers/wp-abstract-1.svg';
 
 /**
  * Yerel duvar kâğıdı görselleri — uygulama ile paketlenir, CDN/ağ yok.
  * Her sekmenin wallpaperIndex'i farklı bir manzara seçer; görsel yüklenene
  * kadar uyumlu gradient arka plan gösterilir.
  */
+import wpGen1 from '@renderer/assets/wallpapers/wp-gen-1.svg';
+import wpGen2 from '@renderer/assets/wallpapers/wp-gen-2.svg';
+import wpGen3 from '@renderer/assets/wallpapers/wp-gen-3.svg';
+import wpGen4 from '@renderer/assets/wallpapers/wp-gen-4.svg';
+import wpGen5 from '@renderer/assets/wallpapers/wp-gen-5.svg';
+import wpGen6 from '@renderer/assets/wallpapers/wp-gen-6.svg';
+import wpGen7 from '@renderer/assets/wallpapers/wp-gen-7.svg';
+import wpGen8 from '@renderer/assets/wallpapers/wp-gen-8.svg';
+import wpGen9 from '@renderer/assets/wallpapers/wp-gen-9.svg';
+import wpGen10 from '@renderer/assets/wallpapers/wp-gen-10.svg';
+import wpGen11 from '@renderer/assets/wallpapers/wp-gen-11.svg';
+import wpGen12 from '@renderer/assets/wallpapers/wp-gen-12.svg';
+import wpGen13 from '@renderer/assets/wallpapers/wp-gen-13.svg';
+import wpGen14 from '@renderer/assets/wallpapers/wp-gen-14.svg';
+import wpGen15 from '@renderer/assets/wallpapers/wp-gen-15.svg';
+import wpGen16 from '@renderer/assets/wallpapers/wp-gen-16.svg';
+import wpGen17 from '@renderer/assets/wallpapers/wp-gen-17.svg';
+import wpGen18 from '@renderer/assets/wallpapers/wp-gen-18.svg';
+import wpGen19 from '@renderer/assets/wallpapers/wp-gen-19.svg';
+import wpGen20 from '@renderer/assets/wallpapers/wp-gen-20.svg';
+import wpGen21 from '@renderer/assets/wallpapers/wp-gen-21.svg';
+import wpGen22 from '@renderer/assets/wallpapers/wp-gen-22.svg';
+import wpGen23 from '@renderer/assets/wallpapers/wp-gen-23.svg';
+import wpGen24 from '@renderer/assets/wallpapers/wp-gen-24.svg';
+import wpGen25 from '@renderer/assets/wallpapers/wp-gen-25.svg';
+import wpGen26 from '@renderer/assets/wallpapers/wp-gen-26.svg';
+import wpGen27 from '@renderer/assets/wallpapers/wp-gen-27.svg';
+import wpGen28 from '@renderer/assets/wallpapers/wp-gen-28.svg';
+import wpGen29 from '@renderer/assets/wallpapers/wp-gen-29.svg';
+import wpGen30 from '@renderer/assets/wallpapers/wp-gen-30.svg';
+
 const LANDSCAPES = [
+  { credit: 'Tasarım: Neon Waves', image: wpGen1, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Particles', image: wpGen2, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Geometry', image: wpGen3, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Aurora', image: wpGen4, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Mesh', image: wpGen5, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+  { credit: 'Tasarım: Neon Grid', image: wpGen6, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Waves', image: wpGen7, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Particles', image: wpGen8, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Geometry', image: wpGen9, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Aurora', image: wpGen10, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+  { credit: 'Tasarım: Neon Mesh', image: wpGen11, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Grid', image: wpGen12, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Waves', image: wpGen13, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Particles', image: wpGen14, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Geometry', image: wpGen15, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+  { credit: 'Tasarım: Neon Aurora', image: wpGen16, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Mesh', image: wpGen17, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Grid', image: wpGen18, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Waves', image: wpGen19, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Particles', image: wpGen20, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+  { credit: 'Tasarım: Neon Geometry', image: wpGen21, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Aurora', image: wpGen22, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Mesh', image: wpGen23, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Grid', image: wpGen24, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Waves', image: wpGen25, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+  { credit: 'Tasarım: Neon Particles', image: wpGen26, fallback: 'linear-gradient(135deg, #2E1065 0%, #5B21B6 100%)' },
+  { credit: 'Tasarım: Mint Geometry', image: wpGen27, fallback: 'linear-gradient(135deg, #022C22 0%, #065F46 100%)' },
+  { credit: 'Tasarım: Magma Aurora', image: wpGen28, fallback: 'linear-gradient(135deg, #450A0A 0%, #991B1B 100%)' },
+  { credit: 'Tasarım: Deep Mesh', image: wpGen29, fallback: 'linear-gradient(135deg, #082F49 0%, #0369A1 100%)' },
+  { credit: 'Tasarım: Void Grid', image: wpGen30, fallback: 'linear-gradient(135deg, #020617 0%, #1E293B 100%)' },
+
+  { credit: 'Cyber Grid — Neon', image: wpCyber1, fallback: 'linear-gradient(180deg, #4F46E5 0%, #020617 100%)' },
+  { credit: 'Abstract Waves — Purple', image: wpAbstract1, fallback: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 100%)' },
   { credit: 'Dağ alacakaranlığı — mor gece', image: wpMountain1, fallback: 'linear-gradient(0deg, #0f0c29 0%, #302b63 100%)' },
   { credit: 'Dağ zirvesi — sisli', image: wpMountain2, fallback: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' },
   { credit: 'Dağ — gün doğumu', image: wpMountain3, fallback: 'linear-gradient(90deg, #1a1a2e 0%, #16213e 100%)' },

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+  <rect width="1920" height="1080" fill="#064E3B"/>
+  <polygon points="0,0 1920,0 1920,400 0,800" fill="#022C22"/>
+  <polygon points="1920,1080 0,1080 0,600 1920,100" fill="#065F46" opacity="0.5"/>
+  <rect x="800" y="400" width="300" height="300" fill="#34D399" opacity="0.2" transform="rotate(270 950 550)"/></svg>

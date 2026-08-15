@@ -182,9 +182,17 @@ export const IPC = {
     // Main → renderer push: bellek limiti aşıldığında gönderilir
     memoryPressure: 'aethernode/performance/memory/pressure',
   },
-  // Otomatik güncelleme (main → renderer)
+  // Otomatik güncelleme
   updater: {
+    check: 'aethernode/updater/check',
+    status: 'aethernode/updater/status',
+    install: 'aethernode/updater/install',
+    checking: 'aethernode/updater/checking',
     available: 'aethernode/updater/available',
+    notAvailable: 'aethernode/updater/not-available',
+    progress: 'aethernode/updater/progress',
+    downloaded: 'aethernode/updater/downloaded',
+    error: 'aethernode/updater/error',
   },
 } as const;
 

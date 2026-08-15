@@ -95,7 +95,7 @@ export default function SettingsPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const matches = (text: string) => !search || text.toLowerCase().includes(search.toLowerCase());
+  
 
   return (
     <div className="mx-auto max-w-3xl p-6" data-settings-page>
@@ -120,6 +120,7 @@ export default function SettingsPage() {
       {search && <p className="mb-3 text-xs text-fg-muted">“{search}” için sonuçlar</p>}
 
       <SettingsSearchContext.Provider value={search}>
+      <UpdaterSection />
       <Section title="Genel">
         <Row label="Varsayılan arama motoru">
           <select
@@ -879,6 +880,174 @@ function BackupSection() {
             Geri yükleme mevcut verilerin üzerine yazar.
           </span>
         </div>
+      </div>
+    </Section>
+  );
+}
+
+function UpdaterSection() {
+  const [appVersion, setAppVersion] = useState<string>('v1.0.4');
+  const [status, setStatus] = useState<
+    'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error'
+  >('idle');
+  const [targetVersion, setTargetVersion] = useState<string | undefined>();
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+  const [errorMsg, setErrorMsg] = useState<string | undefined>();
+  const [busyCheck, setBusyCheck] = useState(false);
+
+  useEffect(() => {
+    window.aether.app
+      .version()
+      .then((res) => {
+        if (res.ok) setAppVersion(`v${res.data}`);
+      })
+      .catch(() => undefined);
+
+    window.aether.updater
+      .getStatus()
+      .then((res) => {
+        if (res.ok && res.data) {
+          const d = res.data as {
+            status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error';
+            version?: string;
+            progressPercent?: number;
+            error?: string;
+          };
+          setStatus(d.status);
+          if (d.version) setTargetVersion(d.version);
+          if (d.progressPercent !== undefined) setProgressPercent(d.progressPercent);
+          if (d.error) setErrorMsg(d.error);
+        }
+      })
+      .catch(() => undefined);
+
+    const unsubChecking = window.aether.updater.onChecking(() => {
+      setStatus('checking');
+      setErrorMsg(undefined);
+    });
+
+    const unsubAvailable = window.aether.updater.onAvailable((p) => {
+      setStatus('available');
+      if (p.version) setTargetVersion(p.version);
+      setProgressPercent(0);
+    });
+
+    const unsubProgress = window.aether.updater.onProgress((p) => {
+      setStatus('downloading');
+      setProgressPercent(p.percent);
+    });
+
+    const unsubDownloaded = window.aether.updater.onDownloaded((p) => {
+      setStatus('downloaded');
+      if (p.version) setTargetVersion(p.version);
+      setProgressPercent(100);
+    });
+
+    const unsubNotAvailable = window.aether.updater.onNotAvailable(() => {
+      setStatus('not-available');
+    });
+
+    const unsubError = window.aether.updater.onError((p) => {
+      setStatus('error');
+      setErrorMsg(p.error || 'Bilinmeyen hata');
+    });
+
+    return () => {
+      unsubChecking();
+      unsubAvailable();
+      unsubProgress();
+      unsubDownloaded();
+      unsubNotAvailable();
+      unsubError();
+    };
+  }, []);
+
+  const handleCheck = async () => {
+    setBusyCheck(true);
+    setErrorMsg(undefined);
+    setStatus('checking');
+    try {
+      const res = await window.aether.updater.check();
+      if (!res.ok) {
+        setErrorMsg(res.error || 'Güncelleme kontrolü başarısız.');
+        setStatus('error');
+      }
+    } catch {
+      setErrorMsg('Bağlantı hatası.');
+      setStatus('error');
+    } finally {
+      setBusyCheck(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    try {
+      await window.aether.updater.install();
+    } catch (e) {
+      alert(`Güncelleme başlatılamadı: ${String(e)}`);
+    }
+  };
+
+  return (
+    <Section title="Sürüm ve Güncelleme">
+      <div className="px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-fg">AetherNode POF</span>
+              <span className="rounded-md bg-brand/20 px-2 py-0.5 text-xs font-medium text-brand">
+                {appVersion}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-fg-muted">
+              {status === 'checking' && 'Güncellemeler kontrol ediliyor…'}
+              {status === 'available' &&
+                `Yeni sürüm bulundu (${targetVersion || 'v1.0.X'}). İndirme başlatılıyor…`}
+              {status === 'downloading' && `Yeni sürüm indiriliyor (%${progressPercent})`}
+              {status === 'downloaded' &&
+                `Yeni sürüm (${targetVersion || ''}) indirildi ve kuruluma hazır!`}
+              {status === 'not-available' && 'En son sürümü kullanıyorsunuz. Uygulamanız güncel.'}
+              {status === 'error' && `Güncelleme durumu: ${errorMsg || 'Kontrol edildi'}`}
+              {status === 'idle' && 'Otomatik güncelleme sistemi aktif.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {status === 'downloaded' ? (
+              <button
+                type="button"
+                onClick={() => void handleInstall()}
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Şimdi Yeniden Başlat ve Yükle
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleCheck()}
+                disabled={status === 'checking' || status === 'downloading' || busyCheck}
+                className="rounded-lg border border-white/10 bg-bg-elevated/60 px-3 py-1.5 text-xs font-medium transition hover:border-brand/40 hover:text-brand disabled:opacity-50"
+              >
+                {status === 'checking' || busyCheck
+                  ? 'Kontrol Ediliyor…'
+                  : 'Güncellemeleri Kontrol Et'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {status === 'downloading' && (
+          <div className="mt-3">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full bg-brand transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="mt-1 text-right text-[10px] text-fg-subtle">%{progressPercent}</div>
+          </div>
+        )}
       </div>
     </Section>
   );

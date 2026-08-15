@@ -19,6 +19,7 @@ import {
   StickyNote as LStickyNote,
   Network as LNetwork,
   Settings as LSettings,
+  Flame as LFlame,
   Minus as LMinus,
   Square as LSquare,
   Pin as LPin,
@@ -77,6 +78,7 @@ export const Key = wrap(LKey);
 export const Note = wrap(LStickyNote);
 export const Network = wrap(LNetwork);
 export const Settings = wrap(LSettings);
+export const Flame = wrap(LFlame);
 export const Security = wrap(LShieldCheck);
 export const SecurityLab = wrap(LFlaskConical);
 export const PrivacyIcon = wrap(LEyeOff);

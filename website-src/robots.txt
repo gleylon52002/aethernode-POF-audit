@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Sitemap: https://aethernodevpn.com/browser/sitemap.xml
+
+User-agent: *
+Disallow: /updates/

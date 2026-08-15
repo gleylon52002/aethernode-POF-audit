@@ -6,6 +6,7 @@ import { showToast } from './toast-bus';
 import {
   Close,
   Plus,
+  Flame,
   Globe,
   Incognito,
   Min,
@@ -36,11 +37,11 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
   const activate = useTabs((s) => s.activate);
   const close = useTabs((s) => s.close);
   const open = useTabs((s) => s.open);
+  const openBurner = useTabs((s) => s.openBurner);
   const toggleMute = useTabs((s) => s.toggleMute);
   const toggleSplit = useTabs((s) => s.toggleSplit);
   const toggleGroupCollapse = useTabs((s) => s.toggleGroupCollapse);
   const moveTab = useTabs((s) => s.moveTab);
-  const [platform, setPlatform] = useState('');
   const [maximized, setMaximized] = useState(false);
   const [showWarn, setShowWarn] = useState(false);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -66,9 +67,6 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
   };
 
   useEffect(() => {
-    void window.aether.app.platform().then((r) => {
-      if (r.ok && r.data) setPlatform(r.data);
-    });
     void window.aether.window.isMaximized().then((r) => r.ok && setMaximized(!!r.data));
     const off = window.aether.window.onMaximizedChange((max) => setMaximized(max));
     return () => off();
@@ -99,7 +97,6 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
     }
   };
 
-  const isMac = platform === 'darwin';
   const tabCount = tabs.length;
   // Chrome benzeri sıkışma: çok sekmede daha dar
   const tabClass = useMemo(() => {
@@ -170,7 +167,9 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
             : undefined
         }
       >
-        {t.profileId === 'incognito' ? (
+        {t.isBurner ? (
+          <Flame className="h-3.5 w-3.5 shrink-0 text-orange-500 animate-pulse-soft" />
+        ) : t.profileId === 'incognito' ? (
           <Incognito className="h-3.5 w-3.5 shrink-0 text-purple-300" />
         ) : t.faviconUrl ? (
           <img src={t.faviconUrl} alt="" className="h-3.5 w-3.5 shrink-0 rounded-sm" onError={(e) => (e.currentTarget.style.display = 'none')} />
@@ -224,6 +223,35 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
 
   return (
     <div className="relative titlebar flex h-10 shrink-0 items-center gap-1 border-b border-white/5 bg-bg-base/80 pl-2 pr-1 backdrop-blur">
+      <div className="no-drag flex shrink-0 items-center gap-1.5 px-2">
+        <button
+          type="button"
+          className="h-3 w-3 rounded-full bg-[#FF5F56] hover:bg-[#FF5F56]/80 flex items-center justify-center group"
+          onClick={() => void window.aether.window.close()}
+          aria-label="Kapat"
+        >
+          <Close className="h-2 w-2 opacity-0 group-hover:opacity-100 text-[#4c0000]" />
+        </button>
+        <button
+          type="button"
+          className="h-3 w-3 rounded-full bg-[#FFBD2E] hover:bg-[#FFBD2E]/80 flex items-center justify-center group"
+          onClick={() => void window.aether.window.minimize()}
+          aria-label="Küçült"
+        >
+          <Min className="h-2 w-2 opacity-0 group-hover:opacity-100 text-[#995700]" />
+        </button>
+        <button
+          type="button"
+          className="h-3 w-3 rounded-full bg-[#27C93F] hover:bg-[#27C93F]/80 flex items-center justify-center group"
+          onClick={() => void window.aether.window.maximize()}
+          aria-label={maximized ? 'Önceki boyut' : 'Büyüt'}
+        >
+          <Max className="h-2 w-2 opacity-0 group-hover:opacity-100 text-[#006500]" />
+        </button>
+      </div>
+
+      <div className="mx-0.5 h-4 w-px shrink-0 bg-white/10" />
+
       <div className="no-drag flex shrink-0 items-center gap-1.5 px-1.5">
         <div className="h-2 w-2 rounded-full bg-brand shadow-glow" />
         <span className="text-[11px] font-semibold tracking-wide text-fg">
@@ -291,6 +319,16 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
         >
           <Plus className="h-4 w-4" />
         </button>
+        <Tooltip label="Kullan-At (Burner) Sekme Aç">
+          <button
+            type="button"
+            onClick={() => openBurner()}
+            className="no-drag grid h-7 w-7 shrink-0 place-items-center rounded-md text-orange-400 hover:bg-orange-500/20 transition-colors"
+            aria-label="Kullan-At sekme"
+          >
+            <Flame className="h-4 w-4" />
+          </button>
+        </Tooltip>
       </div>
       )}
 
@@ -307,7 +345,7 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
         </button>
       </Tooltip>
 
-      {!isMac && (
+      {false && (
         <div className="no-drag flex shrink-0 items-center">
           <button
             type="button"

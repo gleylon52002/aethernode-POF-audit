@@ -35,6 +35,7 @@ export type ShortcutAction =
   | 'devtools'
   | 'fullscreen'
   | 'panic'
+  | 'camouflage'
   | 'findInPage'
   | 'print'
   | 'screenshot'
@@ -74,6 +75,7 @@ function match(input: Input): ShortcutEvent | null {
     return null;
   }
   if (key === 'Escape' && !mod && !shift && !alt) return { action: 'stop' };
+  if (key === 'Escape' && shift && !mod && !alt) return { action: 'camouflage' };
 
   if (alt && !mod && key === 'd') return { action: 'focusAddress' };
   if (!mod) return null;

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AppShell } from '@renderer/components/layouts';
 import { useSettings } from '@renderer/store/settings';
 import { useTabs } from '@renderer/store/tabs';
-import { loadSession, loadSessionGroups } from '@renderer/hooks/use-shortcuts';
+import { loadSession, loadSessionGroups, markSessionReady, persistSession } from '@renderer/hooks/use-shortcuts';
 import { NEW_TAB_URL } from '@shared/constants/app';
 import '@renderer/styles/global.css';
 import { initSoundUnlock } from '@renderer/hooks/use-sound';
@@ -36,11 +36,15 @@ function App() {
       if (session && session.length > 0) {
         useTabs.getState().restoreGroups(loadSessionGroups());
         restoreSession(session);
+        markSessionReady();
+        persistSession();
         return;
       }
     }
     if (startupPage === 'blank') {
       resetAll();
+      markSessionReady();
+      persistSession();
       return;
     }
     // dashboard (varsayılan): tek başlangıç sekmesi NEW_TAB_URL
@@ -50,6 +54,8 @@ function App() {
     } else if (!state.activeId) {
       state.activate(state.tabs[0]!.id);
     }
+    markSessionReady();
+    persistSession();
   }, [settingsLoaded, startupPage, restoreSession, resetAll, open]);
 
   if (!settingsLoaded) {

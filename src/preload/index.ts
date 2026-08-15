@@ -28,6 +28,7 @@ const api = {
     quit: () => invoke<boolean>(IPC.app.quit),
     isDev: () => invoke<boolean>('aethernode/app/isDev'),
     setAsDefault: () => invoke<boolean>(IPC.app.setAsDefault),
+    fetchFavicon: (url: string) => invoke<string>('aethernode/app/fetchFavicon', url),
   },
   window: {
     minimize: () => invoke<boolean>(IPC.window.minimize),
@@ -179,6 +180,17 @@ const api = {
     remove: (id: string) => invoke<boolean>(IPC.downloads.remove, { id }),
     clearCompleted: () => invoke<number>(IPC.downloads.clearCompleted),
     onUpdated: (cb: (items: unknown[]) => void) => on(IPC.downloads.updated, cb),
+  },
+  updater: {
+    check: () => invoke(IPC.updater.check),
+    getStatus: () => invoke(IPC.updater.status),
+    install: () => invoke(IPC.updater.install),
+    onAvailable: (cb: (payload: { version?: string }) => void) => on(IPC.updater.available, cb),
+    onDownloaded: (cb: (payload: { version?: string }) => void) => on(IPC.updater.downloaded, cb),
+    onProgress: (cb: (payload: { percent: number; bytesPerSecond?: number; transferred?: number; total?: number }) => void) => on(IPC.updater.progress, cb),
+    onError: (cb: (payload: { error?: string }) => void) => on(IPC.updater.error, cb),
+    onNotAvailable: (cb: (payload: { version?: string }) => void) => on(IPC.updater.notAvailable, cb),
+    onChecking: (cb: () => void) => on(IPC.updater.checking, cb),
   },
   // Genel event aboneliği — main'den renderer'a tek yönlü güncellemeler.
   on: (channel: string, listener: (payload: unknown) => void): (() => void) => {

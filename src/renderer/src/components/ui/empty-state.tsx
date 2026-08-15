@@ -6,7 +6,6 @@ interface EmptyStateProps {
 
 function Illustration({ variant }: { variant: EmptyStateProps['variant'] }) {
   // Minimal line-art: all use brand/accent friendly colors via currentColor
-  const common = 'stroke-fg-subtle/60';
   if (variant === 'downloads') {
     return (
       <svg width="96" height="72" viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden className="mx-auto">

@@ -46,6 +46,7 @@ const pages: Record<string, ComponentType> = {
   annotate: AnnotatePage,
   performance: PerformancePage,
   extensions: ExtensionsPage,
+  help: lazy(() => import('@renderer/pages/help')),
 };
 
 export function resolveInternalRoute(url: string): {

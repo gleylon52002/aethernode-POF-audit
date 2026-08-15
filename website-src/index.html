@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AetherNode POF — Gizlilik Önce Gelir | Güvenli Tarayıcı</title>
+<meta name="description" content="AetherNode POF — gizlilik varsayılan açık, reklam ve izleyici engelleme, parmak izi koruması, şifreli kasa ve 100+ özellik. Windows için ücretsiz indir.">
+<link rel="canonical" href="https://aethernodevpn.com/browser/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AetherNode POF — Gizlilik Önce Gelir">
+<meta property="og:description" content="Reklam engelleme, parmak izi koruması, güvenli DNS, şifreli kasa — hepsi tek kurulumda. Windows için ücretsiz.">
+<meta property="og:url" content="https://aethernodevpn.com/browser/">
+<meta property="og:image" content="https://aethernodevpn.com/browser/img/og-cover.jpg">
+<meta property="og:locale" content="tr_TR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AetherNode POF — Gizlilik Önce Gelir">
+<meta name="twitter:description" content="Gizlilik varsayılan açık, Windows için güvenli tarayıcı.">
+<meta name="twitter:image" content="https://aethernodevpn.com/browser/img/og-cover.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"AetherNode POF","operatingSystem":"Windows 10, Windows 11","applicationCategory":"BrowserApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"TRY"},"publisher":{"@type":"Organization","name":"AetherNode Systems","url":"https://aethernodevpn.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AetherNode Systems","url":"https://aethernodevpn.com","logo":"https://aethernodevpn.com/browser/img/logo.svg"}</script>
+</head>
+<body>
+
+<!-- Navbar -->
+<header class="navbar" id="navbar">
+  <div class="container navbar__inner">
+    <a class="brand" href="index.html" aria-label="AetherNode Ana Sayfa">
+      <span class="brand__icon">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#0B0B0F"/><defs><linearGradient id="bi" x1="8" y1="8" x2="24" y2="24"><stop stop-color="#7C3AED"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs><path d="M16 6L24 11V19C24 22.5 20.5 25.5 16 27C11.5 25.5 8 22.5 8 19V11L16 6Z" fill="url(#bi)" fill-opacity="0.2" stroke="url(#bi)" stroke-width="1.5"/><path d="M12.5 16.5L15 19L20 13.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand__text">AetherNode <span class="brand__sub">POF</span></span>
+    </a>
+    <nav class="nav__links" id="nav-links" aria-label="Ana menü">
+      <a href="ozellikler.html">Özellikler</a>
+      <a href="indir.html">İndir</a>
+      <a href="gizlilik.html">Gizlilik</a>
+      <a href="blog/index.html">Blog</a>
+      <a class="nav__cta" href="indir.html" data-magnetic>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        İndir — Windows
+      </a>
+    </nav>
+    <div class="lang-switch" style="display:flex; gap:10px; margin-right: 15px; z-index: 99; position: relative;">
+            <a href="#" style="color:var(--text-primary, #EDEDF2); font-weight:bold; pointer-events:none; text-decoration:none;">TR</a>
+            <span style="color:var(--text-muted, #9A9AA8);">|</span>
+            <a href="en/" style="color:var(--text-muted, #9A9AA8); text-decoration:none;">EN</a>
+           </div>
+    <button class="hamburger" id="hamburger" aria-label="Menüyü aç" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- Scroll Progress -->
+<div class="scroll-progress" id="scroll-progress"></div>
+
+<main>
+<!-- ==================== HERO ==================== -->
+<section class="hero" id="hero">
+  <canvas class="hero__particles" id="particles" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora__blob aurora__blob--1"></div>
+    <div class="aurora__blob aurora__blob--2"></div>
+    <div class="aurora__blob aurora__blob--3"></div>
+  </div>
+  <div class="hero__glow" id="hero-glow" aria-hidden="true"></div>
+  <div class="container hero__grid">
+    <div class="hero__content reveal">
+      <div class="kicker">
+        <span class="kicker__dot"></span>
+        Windows için ücretsiz · Gizlilik varsayılan açık
+      </div>
+      <h1>
+        Gizlilik<br>
+        <span class="gradient-text">önce gelir.</span>
+      </h1>
+      <p class="hero__desc">
+        AetherNode POF, reklam engelleme, parmak izi koruması, güvenli DNS ve şifreli kasa gibi <strong>100+ güvenlik özelliğini</strong> tek kurulumda sunar. Eklenti yok, ayar yok — kur ve güvende gez.
+      </p>
+      <div class="hero__ctas">
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+          <a class="btn btn--brand btn--lg" href="indir.html" data-magnetic id="hero-download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Windows için indir
+          </a>
+          <a href="https://www.virustotal.com/gui/home/upload" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); color: #10B981; padding: 0.25rem 0.75rem; border-radius: 999px; text-decoration: none; border: 1px solid rgba(16, 185, 129, 0.2); transition: all 0.2s ease;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            VirusTotal: 0/74 %100 Temiz
+          </a>
+        </div>
+        <a class="btn btn--ghost btn--lg" href="ozellikler.html" data-magnetic>
+          Özellikleri keşfet
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+      <div class="trust">
+        <span class="trust__pill"><span class="trust__dot"></span> Sıfır telemetri</span>
+        <span class="trust__pill">🔒 AES-256 şifreleme</span>
+        <span class="trust__pill">⚡ Chromium tabanlı</span>
+      </div>
+    </div>
+    <div class="hero__visual reveal" aria-hidden="true">
+      <div class="mockup">
+        <div class="mockup__bar">
+          <div class="mockup__dots">
+            <span class="mockup__dot mockup__dot--r"></span>
+            <span class="mockup__dot mockup__dot--y"></span>
+            <span class="mockup__dot mockup__dot--g"></span>
+          </div>
+          <div class="mockup__address" id="mockup-address" style="cursor: pointer;" title="Tıkla ve korumayı test et">
+            <svg id="mockup-shield" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 2L20 7V17C20 20 16.5 23 12 24C7.5 23 4 20 4 17V7L12 2Z"/></svg>
+            <span id="mockup-url">aethernode://dashboard</span>
+          </div>
+          <div class="mockup__actions">
+            <span class="mockup__action-dot"></span>
+            <span class="mockup__action-dot"></span>
+          </div>
+        </div>
+        <div class="mockup__body">
+          <div class="mockup__sidebar" id="mockup-sidebar">
+            <div class="mockup__sidebar-item active" data-url="aethernode://dashboard" data-title="Koruma Aktif" data-blocked="2,847"></div>
+            <div class="mockup__sidebar-item" data-url="https://youtube.com" data-title="YouTube (Reklamsız)" data-blocked="1,240"></div>
+            <div class="mockup__sidebar-item" data-url="https://haberler.com" data-title="Haberler (İzleyici Engelli)" data-blocked="4,812"></div>
+            <div class="mockup__sidebar-item" data-url="aethernode://passwords" data-title="Şifre Kasası (Şifreli)" data-blocked="0"></div>
+            <div class="mockup__sidebar-item" data-url="aethernode://settings" data-title="Ayarlar" data-blocked="0"></div>
+          </div>
+          <div class="mockup__main">
+            <div class="mockup__stat-grid">
+              <div class="mockup__stat">
+                <div class="mockup__stat-icon mockup__stat-icon--shield">🛡️</div>
+                <div class="mockup__stat-label">Koruma</div>
+                <div class="mockup__stat-value gradient-text">Aktif</div>
+              </div>
+              <div class="mockup__stat">
+                <div class="mockup__stat-icon mockup__stat-icon--block">🚫</div>
+                <div class="mockup__stat-label">Engellenen</div>
+                <div class="mockup__stat-value" id="mockup-blocked">2,847</div>
+              </div>
+              <div class="mockup__stat">
+                <div class="mockup__stat-icon mockup__stat-icon--dns">🔒</div>
+                <div class="mockup__stat-label">DNS</div>
+                <div class="mockup__stat-value">DoH</div>
+              </div>
+            </div>
+            <div class="mockup__chart">
+              <div class="mockup__bar-chart">
+                <div class="mockup__bar-col" style="--h:65%"></div>
+                <div class="mockup__bar-col" style="--h:85%"></div>
+                <div class="mockup__bar-col" style="--h:45%"></div>
+                <div class="mockup__bar-col" style="--h:92%"></div>
+                <div class="mockup__bar-col" style="--h:70%"></div>
+                <div class="mockup__bar-col" style="--h:55%"></div>
+                <div class="mockup__bar-col" style="--h:78%"></div>
+              </div>
+            </div>
+            <div class="mockup__rows">
+              <div class="mockup__row" style="width:88%"></div>
+              <div class="mockup__row" style="width:72%"></div>
+              <div class="mockup__row" style="width:95%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== STATS ==================== -->
+<section class="stats" id="stats">
+  <div class="container stats__grid">
+    <div class="stats__item reveal">
+      <div class="stats__number" data-count="100">0</div>
+      <div class="stats__label">Güvenlik özelliği</div>
+    </div>
+    <div class="stats__divider"></div>
+    <div class="stats__item reveal">
+      <div class="stats__number" data-count="12" data-suffix="M+">0</div>
+      <div class="stats__label">Engellenen izleyici</div>
+    </div>
+    <div class="stats__divider"></div>
+    <div class="stats__item reveal">
+      <div class="stats__number" data-count="0" data-suffix="₺">0</div>
+      <div class="stats__label">Fiyat — tamamen ücretsiz</div>
+    </div>
+    <div class="stats__divider"></div>
+    <div class="stats__item reveal">
+      <div class="stats__number" data-count="74">0</div>
+      <div class="stats__label">Virüs Tarama Sonucu (0/74)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FEATURES BENTO ==================== -->
+<section class="section container" id="features">
+  <div class="section__header reveal">
+    <div class="kicker"><span class="kicker__dot"></span> Özellikler</div>
+    <h2>Tek pakette gizlilik.<br><span class="gradient-text">Eklenti kalabalığı yok.</span></h2>
+    <p class="section__sub">Her koruma katmanı bağımsız çalışır. İstediğini aç, istemediğini kapat.</p>
+  </div>
+  <div class="bento reveal">
+    <article class="bento__item bento__item--wide">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L20 7V17C20 20 16.5 23 12 24C7.5 23 4 20 4 17V7L12 2Z"/><path d="M9 12L11 14L15 10"/></svg>
+      </div>
+      <h3>Reklam ve İzleyici Engelleme</h3>
+      <p>Hagezi, EasyList ve EasyPrivacy listeleri 12 saatte bir güncellenir. İstekler <code>onBeforeRequest</code> seviyesinde iptal edilir — sıfır bant genişliği harcanır. YouTube reklamları da dahil.</p>
+      <div class="bento__tag">Ağ katmanı</div>
+    </article>
+    <article class="bento__item">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h3>Parmak İzi Koruması</h3>
+      <p>Canvas, WebGL, Audio, Font, Navigator ve ekran sahteleme. Uniformity moduyla Tor Browser yaklaşımı.</p>
+    </article>
+    <article class="bento__item">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+      </div>
+      <h3>Güvenli DNS (DoH)</h3>
+      <p>Cloudflare, Google ve Quad9 yedekli DNS-over-HTTPS. Tüm sorgular şifreli tünelden geçer.</p>
+    </article>
+    <article class="bento__item">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      </div>
+      <h3>WebRTC Koruması</h3>
+      <p>Gerçek IP adresiniz asla sızmaz. ICE politikası ile tüm yerel adresler maskelenir.</p>
+    </article>
+    <article class="bento__item bento__item--wide">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <h3>Banka Modu</h3>
+      <p>Tüm Türkiye bankaları, katılım bankaları, fintech'ler ve kripto borsaları dahil ~90 finans domain'i otomatik algılanır. İzole oturum, pano engeli, parmak izi sahteleme devre dışı — finansal işlemleriniz güvende.</p>
+      <div class="bento__tag">Otomatik</div>
+    </article>
+    <article class="bento__item">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </div>
+      <h3>Çerez Koruması</h3>
+      <p>3. parti çerezler engelli, izleyici çerezleri anında silinir, sekme başına izolasyon seçeneği.</p>
+    </article>
+    <article class="bento__item">
+      <div class="bento__glow" aria-hidden="true"></div>
+      <div class="bento__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Bellek Tasarrufu</h3>
+      <p>15 dk kullanılmayan sekmeler uyutulur. Medya çalan ve sabitlenmiş sekmeler asla uyutulmaz.</p>
+    </article>
+  </div>
+  <div class="section__more reveal">
+    <a class="btn btn--ghost" href="ozellikler.html" data-magnetic>
+      Tüm 100+ özelliği gör
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ==================== HOW IT WORKS ==================== -->
+<section class="section container" id="how">
+  <div class="section__header reveal">
+    <div class="kicker"><span class="kicker__dot"></span> Nasıl çalışır</div>
+    <h2>3 adımda güvenli gezinti</h2>
+  </div>
+  <div class="steps reveal">
+    <div class="steps__item">
+      <div class="steps__num">1</div>
+      <div class="steps__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <h3>İndir ve Kur</h3>
+      <p>Windows installer tek tıkla kurulur. İçe aktarma sihirbazı Chrome, Brave ve Edge geçmişini alır.</p>
+    </div>
+    <div class="steps__connector" aria-hidden="true">
+      <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="rgba(124,58,237,0.3)" stroke-width="2" stroke-dasharray="4 4"/></svg>
+    </div>
+    <div class="steps__item">
+      <div class="steps__num">2</div>
+      <div class="steps__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      </div>
+      <h3>Gezinmeye Başla</h3>
+      <p>Koruma varsayılan açık. Ek ayar gerekmez. Adres çubuğundaki kalkanla site bazlı kontrol et.</p>
+    </div>
+    <div class="steps__connector" aria-hidden="true">
+      <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="rgba(124,58,237,0.3)" stroke-width="2" stroke-dasharray="4 4"/></svg>
+    </div>
+    <div class="steps__item">
+      <div class="steps__num">3</div>
+      <div class="steps__icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <h3>Kontrol Sende</h3>
+      <p>Her koruma katmanını tek tek aç veya kapat. Sıfır kilitlenme, tam şeffaflık.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== COMPARISON ==================== -->
+<section class="section container" id="compare">
+  <div class="section__header reveal">
+    <div class="kicker"><span class="kicker__dot"></span> Karşılaştırma</div>
+    <h2>Neden AetherNode POF?</h2>
+    <p class="section__sub">Diğer tarayıcılarla özellik karşılaştırması</p>
+  </div>
+  <div class="compare-table reveal">
+    <table>
+      <thead>
+        <tr>
+          <th>Özellik</th>
+          <th class="compare__brand">AetherNode POF</th>
+          <th>Chrome</th>
+          <th>Brave</th>
+          <th>Firefox</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Yerleşik reklam engelleme</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Parmak izi koruması</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check partial">~</span></td>
+          <td><span class="check partial">~</span></td>
+        </tr>
+        <tr>
+          <td>Şifreli şifre kasası</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Banka Modu</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>YouTube reklam engelleme</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check partial">~</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Sıfır telemetri</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Cookie banner otomatik reddetme</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Panik tuşu</td>
+          <td class="compare__brand"><span class="check">✓</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== SECURITY HIGHLIGHTS ==================== -->
+<section class="section" id="security">
+  <div class="container">
+    <div class="section__header reveal">
+      <div class="kicker"><span class="kicker__dot"></span> Güvenlik</div>
+      <h2>Katmanlı koruma mimarisi</h2>
+      <p class="section__sub">Her katman bağımsız çalışır, birbirini güçlendirir.</p>
+    </div>
+    <div class="layers reveal">
+      <div class="layers__item">
+        <div class="layers__num">01</div>
+        <div class="layers__content">
+          <h3>Ağ Katmanı</h3>
+          <p>Reklam/izleyici engelleme, HTTPS zorlama, URL temizleme, güvenli DNS</p>
+        </div>
+        <div class="layers__badge">onBeforeRequest</div>
+      </div>
+      <div class="layers__item">
+        <div class="layers__num">02</div>
+        <div class="layers__content">
+          <h3>Tarayıcı Katmanı</h3>
+          <p>Anti-fingerprint, WebRTC koruması, çerez izolasyonu, script engelleme</p>
+        </div>
+        <div class="layers__badge">Guest Preload</div>
+      </div>
+      <div class="layers__item">
+        <div class="layers__num">03</div>
+        <div class="layers__content">
+          <h3>Veri Katmanı</h3>
+          <p>AES-256-GCM şifreli kasa, cihaz anahtarı, şifreli yedekleme</p>
+        </div>
+        <div class="layers__badge">PBKDF2 + safeStorage</div>
+      </div>
+      <div class="layers__item">
+        <div class="layers__num">04</div>
+        <div class="layers__content">
+          <h3>Uygulama Katmanı</h3>
+          <p>Sandbox, IPC Zod doğrulama, CSP, harici bağlantı koruması</p>
+        </div>
+        <div class="layers__badge">contextIsolation</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== KEYBOARD SHORTCUTS ==================== -->
+<section class="section container" id="shortcuts">
+  <div class="section__header reveal">
+    <div class="kicker"><span class="kicker__dot"></span> Kısayollar</div>
+    <h2>Her şey parmaklarının ucunda</h2>
+    <p class="section__sub">30+ klavye kısayolu ile tam kontrol</p>
+  </div>
+  <div class="shortcuts-grid reveal">
+    <div class="shortcut">
+      <kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>X</kbd>
+      <span class="shortcut__label">Panik Tuşu</span>
+    </div>
+    <div class="shortcut">
+      <kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>N</kbd>
+      <span class="shortcut__label">Gizli Sekme</span>
+    </div>
+    <div class="shortcut">
+      <kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>A</kbd>
+      <span class="shortcut__label">Sekme Arama</span>
+    </div>
+    <div class="shortcut">
+      <kbd>Ctrl</kbd><span>+</span><kbd>F</kbd>
+      <span class="shortcut__label">Sayfada Bul</span>
+    </div>
+    <div class="shortcut">
+      <kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>L</kbd>
+      <span class="shortcut__label">Split View</span>
+    </div>
+    <div class="shortcut">
+      <kbd>F11</kbd>
+      <span class="shortcut__label">Tam Ekran</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== FAQ ==================== -->
+<section class="section container" id="faq" itemscope itemtype="https://schema.org/FAQPage">
+  <div class="section__header reveal">
+    <div class="kicker"><span class="kicker__dot"></span> SSS</div>
+    <h2>Sıkça sorulan sorular</h2>
+  </div>
+  <div class="faq reveal">
+    <div class="faq__item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq__q" type="button" itemprop="name" aria-expanded="false">
+        AetherNode gerçekten ücretsiz mi?
+        <span class="faq__icon" aria-hidden="true"></span>
+      </button>
+      <div class="faq__a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <span itemprop="text">Evet, AetherNode POF tamamen ücretsizdir. Gizli ücret, premium katman veya abonelik yoktur. Tüm güvenlik özellikleri kurulumla birlikte gelir.</span>
+      </div>
+    </div>
+    <div class="faq__item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq__q" type="button" itemprop="name" aria-expanded="false">
+        Chrome eklentilerim çalışır mı?
+        <span class="faq__icon" aria-hidden="true"></span>
+      </button>
+      <div class="faq__a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <span itemprop="text">AetherNode Chromium tabanlıdır ancak güvenlik yüzeyini azaltmak için eklenti desteği kasıtlı olarak çıkarılmıştır. İhtiyaç duyabileceğiniz tüm koruma özellikleri yerleşik olarak sunulur.</span>
+      </div>
+    </div>
+    <div class="faq__item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq__q" type="button" itemprop="name" aria-expanded="false">
+        Verilerim nereye gidiyor?
+        <span class="faq__icon" aria-hidden="true"></span>
+      </button>
+      <div class="faq__a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <span itemprop="text">Hiçbir yere. AetherNode sıfır telemetri ilkesiyle çalışır — anonim bile olsa veri toplanmaz, sunucuya gönderilmez. Tüm verileriniz cihazınızda, AES-256-GCM ile şifreli kalır.</span>
+      </div>
+    </div>
+    <div class="faq__item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq__q" type="button" itemprop="name" aria-expanded="false">
+        Güncelleme nasıl çalışır?
+        <span class="faq__icon" aria-hidden="true"></span>
+      </button>
+      <div class="faq__a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <span itemprop="text">Otomatik güncelleme arka planda çalışır. Yeni sürüm sessizce indirilir ve uygulamayı kapattığınızda kurulur. Bir sonraki açılışınızda güncel sürüm çalışır.</span>
+      </div>
+    </div>
+    <div class="faq__item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <button class="faq__q" type="button" itemprop="name" aria-expanded="false">
+        macOS ve Linux desteği var mı?
+        <span class="faq__icon" aria-hidden="true"></span>
+      </button>
+      <div class="faq__a" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <span itemprop="text">Şu anda AetherNode POF yalnızca Windows 10/11 (64-bit) için sunulmaktadır. macOS ve Linux sürümleri gelecekte planlanmaktadır.</span>
+      </div>
+    </div>
+  </div>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"AetherNode gerçekten ücretsiz mi?","acceptedAnswer":{"@type":"Answer","text":"Evet, AetherNode POF tamamen ücretsizdir."}},{"@type":"Question","name":"Chrome eklentilerim çalışır mı?","acceptedAnswer":{"@type":"Answer","text":"Eklenti desteği güvenlik için kasıtlı olarak çıkarılmıştır."}},{"@type":"Question","name":"Verilerim nereye gidiyor?","acceptedAnswer":{"@type":"Answer","text":"Hiçbir yere. Sıfır telemetri ilkesiyle çalışır."}},{"@type":"Question","name":"Güncelleme nasıl çalışır?","acceptedAnswer":{"@type":"Answer","text":"Otomatik güncelleme arka planda çalışır."}},{"@type":"Question","name":"macOS ve Linux desteği var mı?","acceptedAnswer":{"@type":"Answer","text":"Şu anda yalnızca Windows 10/11 için sunulmaktadır."}}]}</script>
+</section>
+
+<!-- ==================== CTA ==================== -->
+<section class="cta-section" id="cta">
+  <div class="container cta__inner reveal">
+    <div class="cta__glow" aria-hidden="true"></div>
+    <h2>Gizliliğinizi geri alın.</h2>
+    <p>Windows 10/11 — 64-bit · Kurulum 30 saniye · Tamamen ücretsiz</p>
+    <div class="cta__buttons">
+      <a class="btn btn--brand btn--lg" href="indir.html" data-magnetic>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Ücretsiz İndir
+      </a>
+      <a class="btn btn--ghost btn--lg" href="ozellikler.html" data-magnetic>Tüm özellikler</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <a class="brand" href="index.html">
+        <span class="brand__icon">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#0B0B0F"/><defs><linearGradient id="fi" x1="8" y1="8" x2="24" y2="24"><stop stop-color="#7C3AED"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs><path d="M16 6L24 11V19C24 22.5 20.5 25.5 16 27C11.5 25.5 8 22.5 8 19V11L16 6Z" fill="url(#fi)" fill-opacity="0.2" stroke="url(#fi)" stroke-width="1.5"/><path d="M12.5 16.5L15 19L20 13.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand__text">AetherNode <span class="brand__sub">POF</span></span>
+      </a>
+      <p class="footer__desc">Gizlilik varsayılan açık, Windows için güvenli tarayıcı.</p>
+    </div>
+    <div class="footer__col">
+      <strong class="footer__title">Ürün</strong>
+      <a href="ozellikler.html">Özellikler</a>
+      <a href="indir.html">İndir</a>
+      <a href="blog/index.html">Blog</a>
+    </div>
+    <div class="footer__col">
+      <strong class="footer__title">Yasal</strong>
+      <a href="gizlilik.html">Gizlilik Politikası</a>
+      <a href="gizlilik.html">KVKK Aydınlatma</a>
+    </div>
+    <div class="footer__col">
+      <strong class="footer__title">İletişim & Bağlantılar</strong>
+      <a href="mailto:iletisim@aethernodevpn.com">iletisim@aethernodevpn.com</a>
+      <a href="https://aethernodevpn.com" target="_blank" rel="noopener">AetherNode VPN</a>
+      <a href="https://github.com/gleylon52002/aethernode-POF-audit" target="_blank" rel="noopener">GitHub (Kaynak Kod)</a>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© 2026 AetherNode Systems. Tüm hakları saklıdır.</span>
+  </div>
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<script src="js/main.js" defer></script>
+<a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
+  <img src="https://sellwithboost.com/badge/listing.svg" alt="Listed on Sell With boost" style="height: 40px; width: auto;" />
+</a>
+</body>
+</html>

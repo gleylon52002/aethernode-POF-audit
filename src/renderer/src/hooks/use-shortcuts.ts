@@ -241,6 +241,10 @@ async function dispatch(action: string, arg?: number): Promise<void> {
       tabs.resetAll();
       break;
     }
+    case 'camouflage': {
+      window.dispatchEvent(new CustomEvent('aether:camouflage'));
+      break;
+    }
     default:
       break;
   }
@@ -249,8 +253,15 @@ async function dispatch(action: string, arg?: number): Promise<void> {
 export const SESSION_KEY = 'aethernode.session.tabs';
 export const SESSION_GROUPS_KEY = 'aethernode.session.groups';
 
+let isSessionReady = false;
+
+export function markSessionReady(): void {
+  isSessionReady = true;
+}
+
 /** Oturum sekmelerini localStorage'a yazar (incognito hariç). */
 export function persistSession(): void {
+  if (!isSessionReady) return;
   try {
     const { tabs, groups } = useTabs.getState();
     const snapshot = tabs

@@ -156,7 +156,7 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
       spoofUserAgent: true,
       // Uniformity: kullanıcı UA ayarını yok say — herkes AYNI referans UA
       userAgentString:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
     };
   }
 
@@ -452,10 +452,11 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
       (() => {
         try {
           Object.defineProperty(navigator, 'plugins', { get: () => {
-            const p = { length: 3, item: (i) => p[i], namedItem: () => null, refresh() {} };
+            const p = { length: 4, item: (i) => p[i], namedItem: () => null, refresh() {} };
             p[0] = { name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' };
             p[1] = { name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: '' };
             p[2] = { name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: '' };
+            p[3] = { name: 'Widevine Content Decryption Module', filename: 'widevinecdmadapter.dll', description: 'Enables playback of encrypted media contents' };
             return p;
           }});
           Object.defineProperty(navigator, 'mimeTypes', { get: () => ({ length: 0, item: () => null, namedItem: () => null }) });
@@ -533,8 +534,8 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
         try {
           const fixed = {
             brands: [
-              { brand: 'Chromium', version: '126' },
-              { brand: 'Google Chrome', version: '126' },
+              { brand: 'Chromium', version: '130' },
+              { brand: 'Google Chrome', version: '130' },
               { brand: 'Not-A.Brand', version: '99' },
             ],
             mobile: false,
@@ -542,10 +543,10 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
             getHighEntropyValues: () =>
               Promise.resolve({
                 architecture: 'x86', bitness: '64', model: '',
-                platformVersion: '10.0.0', uaFullVersion: '126.0.0.0',
+                platformVersion: '10.0.0', uaFullVersion: '130.0.0.0',
                 fullVersionList: [
-                  { brand: 'Chromium', version: '126.0.0.0' },
-                  { brand: 'Google Chrome', version: '126.0.0.0' },
+                  { brand: 'Chromium', version: '130.0.0.0' },
+                  { brand: 'Google Chrome', version: '130.0.0.0' },
                   { brand: 'Not-A.Brand', version: '99.0.0.0' },
                 ],
               }),

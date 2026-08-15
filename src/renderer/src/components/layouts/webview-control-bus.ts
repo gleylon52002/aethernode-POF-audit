@@ -27,7 +27,7 @@ export interface WebviewControl {
   getUrl(): string | null;
   getTitle(): string | null;
   findInPage(text: string, opts?: { forward?: boolean; findNext?: boolean }): void;
-  stopFindInPage(): void;
+  stopFindInPage(action?: 'clearSelection' | 'keepSelection' | 'activateSelection'): void;
   onFindResult(cb: (r: FindResult) => void): () => void;
   print(): void;
   captureScreenshot(): Promise<string | null>;

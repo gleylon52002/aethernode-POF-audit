@@ -2,6 +2,7 @@ import { app } from 'electron';
 import { defineHandler, noPayload } from '@main/ipc/router';
 import { IPC } from '@shared/constants';
 import { is } from '@main/utils/env';
+import { z } from 'zod';
 
 // Uygulama yaşam döngüsü kanalları. Aşama 1'in minimum, çalışır handler'ları.
 export function registerAppHandlers(): void {
@@ -31,13 +32,17 @@ export function registerAppHandlers(): void {
     schema: noPayload,
     handle: () => {
       import('electron').then(({ shell }) => {
-        if (process.platform === 'win32') {
-          app.setAsDefaultProtocolClient('http');
-          app.setAsDefaultProtocolClient('https');
-          shell.openExternal('ms-settings:defaultapps');
-        } else {
-          app.setAsDefaultProtocolClient('http');
-          app.setAsDefaultProtocolClient('https');
+        try {
+          if (process.platform === 'win32') {
+            app.setAsDefaultProtocolClient('http', process.execPath, [process.argv[1] || '']);
+            app.setAsDefaultProtocolClient('https', process.execPath, [process.argv[1] || '']);
+            shell.openExternal('ms-settings:defaultapps').catch(() => undefined);
+          } else {
+            app.setAsDefaultProtocolClient('http');
+            app.setAsDefaultProtocolClient('https');
+          }
+        } catch {
+          /* yoksay */
         }
       });
       return true;
@@ -49,5 +54,24 @@ export function registerAppHandlers(): void {
     channel: 'aethernode/app/isDev',
     schema: noPayload,
     handle: () => is.dev,
+  });
+
+  defineHandler({
+    channel: 'aethernode/app/fetchFavicon',
+    schema: z.string(),
+    handle: async (url) => {
+      try {
+        if (!url || !url.startsWith('http')) return null;
+        // Fetch ignoring CORS since it's the main process
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const buf = await res.arrayBuffer();
+        const type = res.headers.get('content-type') || 'image/png';
+        const base64 = Buffer.from(buf).toString('base64');
+        return `data:${type};base64,${base64}`;
+      } catch {
+        return null;
+      }
+    },
   });
 }
