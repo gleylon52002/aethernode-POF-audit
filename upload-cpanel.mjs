@@ -18,14 +18,21 @@ async function upload() {
             console.log(`File: ${info.name}, transferred: ${info.bytes}`);
         });
 
-        console.log('FTP Bağlantısı başarılı, public_html/aethernodevpn.com/updates dizinine gidiliyor...');
-        await client.ensureDir("public_html/aethernodevpn.com/updates");
+        console.log('FTP Bağlantısı başarılı, aethernodevpn.com/updates dizinine gidiliyor...');
+        await client.ensureDir("aethernodevpn.com/updates");
         
-        const portablePath = resolve('release/AetherNode POF-v1.0.3-portable.exe');
+        const portablePath = resolve('release/AetherNode POF-v1.0.4-portable.exe');
         if (existsSync(portablePath)) {
             console.log('Portable yükleniyor...');
-            await client.uploadFrom(portablePath, 'AetherNode POF-v1.0.3-portable.exe');
+            await client.uploadFrom(portablePath, 'AetherNode POF-v1.0.4-portable.exe');
             console.log('Portable yüklendi.');
+        }
+
+        const installerPath = resolve('release/AetherNode POF-v1.0.4-x64.exe');
+        if (existsSync(installerPath)) {
+            console.log('Installer yükleniyor...');
+            await client.uploadFrom(installerPath, 'AetherNode POF-v1.0.4-x64.exe');
+            console.log('Installer yüklendi.');
         }
         
         const ymlPath = resolve('release/latest.yml');
