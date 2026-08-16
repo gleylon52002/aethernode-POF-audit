@@ -18,6 +18,7 @@ import {
 import { Tooltip } from '@renderer/components/ui';
 import { GROUP_COLORS, openTabGroupMenu } from './tab-group-menu';
 import { useWorkspaces } from '@renderer/store/workspaces';
+import { WorkspaceDropdown } from './workspace-dropdown';
 
 const TAB_WARN_KEY = 'aether.tabWarn.dismissed';
 const TAB_WARN_AT = 30;
@@ -27,9 +28,7 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
   const workspaceId = useWorkspaces((s) => s.activeId);
   const tabs = useMemo(() => {
     if (!workspaceId) return allTabs;
-    return allTabs.filter(
-      (t) => !t.workspaceId || t.workspaceId === workspaceId || t.id === useTabs.getState().activeId,
-    );
+    return allTabs.filter((t) => t.workspaceId === workspaceId);
   }, [allTabs, workspaceId]);
   const groups = useTabs((s) => s.groups);
   const activeId = useTabs((s) => s.activeId);
@@ -258,6 +257,10 @@ export function TabBar({ showTabs = true }: { showTabs?: boolean }) {
           AetherNode <span className="font-medium text-brand">POF</span>
         </span>
       </div>
+
+      <div className="mx-0.5 h-4 w-px shrink-0 bg-white/10" />
+
+      <WorkspaceDropdown />
 
       <div className="mx-0.5 h-4 w-px shrink-0 bg-white/10" />
 

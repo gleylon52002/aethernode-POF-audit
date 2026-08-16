@@ -12,8 +12,8 @@ interface NotesState {
   error: string | null;
   selectedId: string | null;
   load: () => Promise<void>;
-  add: (title: string, body: string) => Promise<boolean>;
-  update: (id: string, patch: Partial<Pick<SecureNote, 'title' | 'body' | 'pinned' | 'color' | 'tags'>>) => Promise<boolean>;
+  add: (title: string, body: string, meta?: Partial<SecureNote>) => Promise<boolean>;
+  update: (id: string, patch: Partial<SecureNote>) => Promise<boolean>;
   remove: (id: string) => Promise<boolean>;
   select: (id: string | null) => void;
   togglePin: (id: string) => Promise<boolean>;
@@ -49,13 +49,17 @@ export const useNotes = create<NotesState>((set, get) => ({
     }
   },
 
-  add: async (title, body) => {
-    const res = await window.aether.notes.add(title, body);
+  add: async (title, body, meta) => {
+    const res = await (window.aether.notes as any).add(title, body, meta);
     if (!res.ok) {
       set({ error: res.error });
       return false;
     }
+    set({ error: null });
     await get().load();
+    if (res.data && res.data.id) {
+      set({ selectedId: res.data.id });
+    }
     return true;
   },
 

@@ -53,18 +53,27 @@ export async function listNotes(): Promise<SecureNote[]> {
   return (await read()).notes;
 }
 
-export type NoteInput = Pick<SecureNote, 'title' | 'body'>;
+export type NoteInput = Partial<SecureNote> & Pick<SecureNote, 'title' | 'body'>;
 
 export async function addNote(input: NoteInput): Promise<SecureNote> {
   const rec = await read();
   const now = Date.now();
-  const note: SecureNote = { ...input, id: randomId(), createdAt: now, updatedAt: now, pinned: false, color: 'default', tags: [] };
+  const note: SecureNote = {
+    id: randomId(),
+    createdAt: now,
+    updatedAt: now,
+    pinned: false,
+    color: 'default',
+    tags: [],
+    links: [],
+    ...input,
+  };
   rec.notes.push(note);
   await write(rec);
   return note;
 }
 
-export type NotePatch = Partial<Pick<SecureNote, 'title' | 'body' | 'pinned' | 'color' | 'tags'>>;
+export type NotePatch = Partial<Pick<SecureNote, 'title' | 'body' | 'pinned' | 'color' | 'tags' | 'links' | 'sourceUrl' | 'sourceTitle'>>;
 
 export async function updateNote(id: string, patch: NotePatch): Promise<SecureNote> {
   const rec = await read();

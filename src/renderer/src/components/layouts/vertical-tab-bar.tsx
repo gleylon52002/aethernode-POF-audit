@@ -31,7 +31,7 @@ export function VerticalTabBar() {
   const treeTabs = useSettings((s) => s.settings.general.treeTabs);
   const tabs = allTabs.filter((t) => {
     if (!workspaceId) return true;
-    return !t.workspaceId || t.workspaceId === workspaceId || t.id === useTabs.getState().activeId;
+    return t.workspaceId === workspaceId;
   });
   const groups = useTabs((s) => s.groups);
   const activeId = useTabs((s) => s.activeId);

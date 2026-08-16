@@ -195,14 +195,26 @@ export const useTabs = create<TabsState>((set, get) => ({
   close: (id) =>
     set((s) => {
       const closing = s.tabs.find((t) => t.id === id);
-      const closedIdx = s.tabs.findIndex((t) => t.id === id);
+      const wsId = closing?.workspaceId;
       const tabs = s.tabs.filter((t) => t.id !== id);
-      // Chrome: kapanan sekmenin sağına (yoksa soluna) geç
       let activeId = s.activeId;
       if (s.activeId === id) {
-        const right = s.tabs[closedIdx + 1];
-        const left = s.tabs[closedIdx - 1];
-        activeId = (right ?? left)?.id ?? null;
+        // Öncelik: aynı çalışma alanındaki bitişik sekmeye geç
+        const sameWsTabs = wsId ? tabs.filter((t) => t.workspaceId === wsId) : tabs;
+        if (sameWsTabs.length > 0) {
+          const closedIdx = s.tabs.findIndex((t) => t.id === id);
+          const right = s.tabs.slice(closedIdx + 1).find((t) => !wsId || t.workspaceId === wsId);
+          const left = [...s.tabs.slice(0, closedIdx)].reverse().find((t) => !wsId || t.workspaceId === wsId);
+          activeId = (right ?? left ?? sameWsTabs[0])?.id ?? null;
+        } else if (wsId) {
+          // Bu çalışma alanında sekme kalmadı — otomatik yeni sekme ekle
+          const newTab = makeTab(undefined, 'default');
+          newTab.workspaceId = wsId;
+          tabs.push(newTab);
+          activeId = newTab.id;
+        } else {
+          activeId = tabs[0]?.id ?? null;
+        }
       }
       const splitId = s.splitId === id ? null : s.splitId;
       let closedStack = s.closedStack;
@@ -225,13 +237,25 @@ export const useTabs = create<TabsState>((set, get) => ({
   },
   forceClose: (id) =>
     set((s) => {
-      const closedIdx = s.tabs.findIndex((t) => t.id === id);
+      const closing = s.tabs.find((t) => t.id === id);
+      const wsId = closing?.workspaceId;
       const tabs = s.tabs.filter((t) => t.id !== id);
       let activeId = s.activeId;
       if (s.activeId === id) {
-        const right = s.tabs[closedIdx + 1];
-        const left = s.tabs[closedIdx - 1];
-        activeId = (right ?? left)?.id ?? null;
+        const sameWsTabs = wsId ? tabs.filter((t) => t.workspaceId === wsId) : tabs;
+        if (sameWsTabs.length > 0) {
+          const closedIdx = s.tabs.findIndex((t) => t.id === id);
+          const right = s.tabs.slice(closedIdx + 1).find((t) => !wsId || t.workspaceId === wsId);
+          const left = [...s.tabs.slice(0, closedIdx)].reverse().find((t) => !wsId || t.workspaceId === wsId);
+          activeId = (right ?? left ?? sameWsTabs[0])?.id ?? null;
+        } else if (wsId) {
+          const newTab = makeTab(undefined, 'default');
+          newTab.workspaceId = wsId;
+          tabs.push(newTab);
+          activeId = newTab.id;
+        } else {
+          activeId = tabs[0]?.id ?? null;
+        }
       }
       const splitId = s.splitId === id ? null : s.splitId;
       const groups = s.groups.filter((g) => tabs.some((t) => t.groupId === g.id));

@@ -10,7 +10,6 @@ import { FindBar } from './find-bar';
 import { TabSearch } from './tab-search';
 import { CommandPalette } from './command-palette';
 import { ShieldPanel } from './shield-panel';
-import { WorkspaceSwitcher } from './workspace-switcher';
 import { BankFrame } from './bank-frame';
 import { ToastHost } from './toast-host';
 import { WelcomeScreen } from './welcome-screen';
@@ -206,9 +205,25 @@ export function AppShell() {
     });
   }, []);
 
-  // Workspace değişince sekmeleri etiketle (yeni sekmeler)
+  // Workspace değiştiğinde sekmeleri izole et ve ilgili alanın en son aktif sekmesine odaklan
   useEffect(() => {
-    /* workspaceId filter UI'da uygulanır */
+    const tabsState = useTabs.getState();
+    const allTabs = tabsState.tabs;
+    if (!workspaceId) {
+      const exists = allTabs.some((t) => t.id === tabsState.activeId);
+      if (!exists && allTabs.length > 0) {
+        tabsState.activate(allTabs[0]!.id);
+      }
+    } else {
+      const wsTabs = allTabs.filter((t) => t.workspaceId === workspaceId);
+      if (wsTabs.length > 0) {
+        const sorted = [...wsTabs].sort((a, b) => (b.lastActiveAt ?? 0) - (a.lastActiveAt ?? 0));
+        tabsState.activate(sorted[0]!.id);
+      } else {
+        const newTabId = tabsState.open();
+        tabsState.update(newTabId, { workspaceId });
+      }
+    }
   }, [workspaceId]);
 
   // Güncelleme %100 indirilip kuruluma hazır olduğunda bildirim rozetini yak ve toast çıkar
@@ -219,22 +234,30 @@ export function AppShell() {
         void useSettings.getState().apply({ ...s, general: { ...s.general, hasSeenUpdate: false } });
       }
       showToast(
-        `Yeni sürüm (${info.version || 'v1.0.4'}) indirildi ve kuruluma hazır!`,
+        `Yeni sürüm (${info.version || 'v2.0.1'}) indirildi ve kuruluma hazır!`,
         'success',
         7000,
       );
     });
   }, []);
 
+  const ambientWebflow = useSettings((s) => s.settings.general.ambientWebflow ?? true);
   const vertical = tabLayout === 'vertical';
 
   return (
-    <div className="relative flex h-full flex-col bg-bg">
-      {/* Arka planda global Aura Glow efekti */}
-      <div 
-        className="pointer-events-none absolute inset-0 z-0 opacity-10 blur-[120px] transition-colors duration-1000 ease-out" 
-        style={{ backgroundColor: 'var(--brand-500)' }} 
-      />
+    <div className="relative flex h-full flex-col bg-bg overflow-hidden">
+      {/* Ambient Webflow (Ambilight) — GPU hızlandırmalı difüz ambiyans ışığı */}
+      {ambientWebflow && (
+        <>
+          <div 
+            className="pointer-events-none absolute -inset-10 z-0 opacity-15 blur-[120px] transition-colors duration-1000 ease-out will-change-transform" 
+            style={{ backgroundColor: 'var(--brand-500, #7c3aed)' }} 
+          />
+          <div 
+            className="pointer-events-none absolute top-0 left-0 right-0 h-[1.5px] z-50 bg-gradient-to-r from-transparent via-[var(--brand-500,#7c3aed)] to-transparent opacity-60 transition-opacity duration-700" 
+          />
+        </>
+      )}
       
       <div className="flex min-h-0 flex-1 relative z-10">
         <Sidebar />
@@ -242,7 +265,6 @@ export function AppShell() {
           <TabBar showTabs={!vertical} />
           <AddressBar />
           <BookmarksBar />
-          <WorkspaceSwitcher />
           <div className="flex min-h-0 flex-1">
             {vertical && <VerticalTabBar />}
             <div className="relative min-h-0 min-w-0 flex-1">

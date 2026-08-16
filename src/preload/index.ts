@@ -81,8 +81,13 @@ const api = {
   },
   notes: {
     list: () => invoke(IPC.notes.list),
-    add: (title: string, body: string) => invoke(IPC.notes.add, { title, body }),
-    update: (id: string, patch: { title?: string; body?: string; pinned?: boolean; color?: string; tags?: string[] }) =>
+    add: (titleOrPayload: string | { title: string; body: string; [key: string]: any }, body?: string, meta?: any) => {
+      if (typeof titleOrPayload === 'object' && titleOrPayload !== null) {
+        return invoke(IPC.notes.add, titleOrPayload);
+      }
+      return invoke(IPC.notes.add, { title: titleOrPayload, body: body || '', ...(meta || {}) });
+    },
+    update: (id: string, patch: Record<string, any>) =>
       invoke(IPC.notes.update, { id, ...patch }),
     remove: (id: string) => invoke(IPC.notes.remove, { id }),
   },

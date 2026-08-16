@@ -15,4 +15,7 @@ export interface SecureNote {
   pinned?: boolean;
   color?: NoteColor;
   tags?: string[];
+  links?: string[]; // [[wikilink]] referansları
+  sourceUrl?: string; // Web clipper kaynak adresi
+  sourceTitle?: string; // Web clipper sayfa başlığı
 }

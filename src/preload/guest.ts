@@ -20,6 +20,8 @@ interface GuestConfig {
     /** compatibility = randomizasyon, uniformity = tüm kullanıcılarda AYNI profil */
     mode?: 'compatibility' | 'uniformity';
     spoofCanvas: boolean;
+    canvasFarbling?: boolean;
+    letterboxing?: boolean;
     spoofWebGL: boolean;
     spoofAudio: boolean;
     spoofFonts: boolean;
@@ -52,6 +54,8 @@ const FALLBACK: GuestConfig = {
     enabled: true,
     mode: 'uniformity',
     spoofCanvas: true,
+    canvasFarbling: true,
+    letterboxing: true,
     spoofWebGL: true,
     spoofAudio: true,
     spoofFonts: true,
@@ -229,36 +233,71 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
     } else {
       parts.push(`
       (() => {
-        const noise = (canvas) => {
-          try {
-            const ctx = canvas.getContext('2d');
-            if (!ctx || canvas.width < 1 || canvas.height < 1) return;
-            const img = ctx.getImageData(0, 0, Math.min(canvas.width, 16), Math.min(canvas.height, 16));
-            for (let i = 0; i < img.data.length; i += 4) {
-              img.data[i] = img.data[i] ^ ((__anSeed >> (i % 8)) & 1);
-            }
-            ctx.putImageData(img, 0, 0);
-          } catch (_) {}
+        // Dinamik Canvas Farbling (Tor/Mullvad Standardı):
+        // Her domain ve oturum için deterministik gürültü (+/-1 bit farkı).
+        // Görselleri ve grafikleri bozmaz; ancak sitelerin ürettiği Canvas Hash'ini tamamen rastgeleleştirir.
+        const hashStr = (str) => {
+          let h = 0x811c9dc5;
+          for (let i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+          }
+          return h >>> 0;
         };
+        const domainSeed = (hashStr(location.hostname || 'aethernode') ^ __anSeed) >>> 0;
+        const pseudoRand = (idx) => {
+          let x = (domainSeed + Math.imul(idx, 0x9e3779b9)) >>> 0;
+          x ^= x >>> 16;
+          x = Math.imul(x, 0x21f0aaad);
+          x ^= x >>> 15;
+          return (x >>> 0) / 4294967296;
+        };
+        const farbleImageData = (data) => {
+          if (!data || !data.data) return;
+          const px = data.data;
+          const stride = Math.max(1, Math.floor(px.length / 512));
+          for (let i = 0; i < px.length; i += stride * 4) {
+            const r = pseudoRand(i);
+            if (r > 0.5) {
+              const ch = i + Math.floor(r * 3);
+              if (ch < px.length) {
+                px[ch] = px[ch] > 128 ? px[ch] - 1 : px[ch] + 1;
+              }
+            }
+          }
+        };
+
         const proto = CanvasRenderingContext2D.prototype;
         const origGetImageData = proto.getImageData;
-        proto.getImageData = function (...args) {
-          const data = origGetImageData.apply(this, args);
-          const px = data.data;
-          for (let i = 0; i < px.length; i += 4 * 31) {
-            px[i] = px[i] ^ (Math.floor(__anRand(i) * 3) & 0xff);
-          }
+        proto.getImageData = function (x, y, w, h) {
+          const data = origGetImageData.apply(this, arguments);
+          try { farbleImageData(data); } catch (_) {}
           return data;
         };
-        const wrapCanvas = (method) => {
+
+        const wrapCanvasExport = (method) => {
           const orig = HTMLCanvasElement.prototype[method];
+          if (!orig) return;
           HTMLCanvasElement.prototype[method] = function (...args) {
-            noise(this);
+            try {
+              const ctx = this.getContext('2d');
+              if (ctx && this.width > 0 && this.height > 0) {
+                const sample = origGetImageData.call(ctx, 0, 0, Math.min(this.width, 32), Math.min(this.height, 32));
+                farbleImageData(sample);
+                ctx.putImageData(sample, 0, 0);
+              }
+            } catch (_) {}
             return orig.apply(this, args);
           };
         };
-        wrapCanvas('toDataURL');
-        wrapCanvas('toBlob');
+        wrapCanvasExport('toDataURL');
+        wrapCanvasExport('toBlob');
+        if (typeof OffscreenCanvas !== 'undefined' && OffscreenCanvas.prototype.convertToBlob) {
+          const origBlob = OffscreenCanvas.prototype.convertToBlob;
+          OffscreenCanvas.prototype.convertToBlob = function (...args) {
+            return origBlob.apply(this, args);
+          };
+        }
       })();
     `);
     }
@@ -620,25 +659,34 @@ function buildFingerprintScript(fp: GuestConfig['fingerprint']): string {
     `);
   }
 
-  if (uniformity) {
-    // Sabit referans profil: 1920×1080 ekran + 100px letterboxing + DPR 1
+  if (fp.letterboxing !== false || uniformity) {
+    // Tor/Mullvad Standardı Stepped Letterboxing:
+    // Monitör çözünürlüğünü 1920x1080 standardına çeker ve viewport boyutlarını
+    // 200x100 kademelerine yuvarlayarak benzersiz piksel boyutu parmak izini yok eder.
     parts.push(`
       (() => {
         try {
+          const stepW = (w) => Math.max(800, Math.floor(w / 200) * 200);
+          const stepH = (h) => Math.max(600, Math.floor(h / 100) * 100);
+          
           Object.defineProperty(screen, 'width', { get: () => 1920 });
           Object.defineProperty(screen, 'height', { get: () => 1080 });
           Object.defineProperty(screen, 'availWidth', { get: () => 1920 });
           Object.defineProperty(screen, 'availHeight', { get: () => 1040 });
           Object.defineProperty(screen, 'availLeft', { get: () => 0 });
           Object.defineProperty(screen, 'availTop', { get: () => 0 });
-        } catch (_) {}
-        try { Object.defineProperty(window, 'devicePixelRatio', { get: () => 1 }); } catch (_) {}
-        try {
-          const round100 = (v) => Math.max(100, Math.floor(v / 100) * 100);
-          Object.defineProperty(window, 'outerWidth', { get: () => round100(window.innerWidth) });
-          Object.defineProperty(window, 'outerHeight', { get: () => round100(window.innerHeight) });
+          Object.defineProperty(screen, 'colorDepth', { get: () => 24 });
+          Object.defineProperty(screen, 'pixelDepth', { get: () => 24 });
+          
+          Object.defineProperty(window, 'devicePixelRatio', { get: () => 1 });
           Object.defineProperty(window, 'screenX', { get: () => 0 });
           Object.defineProperty(window, 'screenY', { get: () => 0 });
+          
+          const origInnerW = Object.getOwnPropertyDescriptor(window, 'innerWidth')?.get || (() => window.innerWidth);
+          const origInnerH = Object.getOwnPropertyDescriptor(window, 'innerHeight')?.get || (() => window.innerHeight);
+          
+          Object.defineProperty(window, 'outerWidth', { get: () => stepW(origInnerW.call(window)) });
+          Object.defineProperty(window, 'outerHeight', { get: () => stepH(origInnerH.call(window)) + 80 });
         } catch (_) {}
       })();
     `);
@@ -939,7 +987,7 @@ if (!config.scriptBlocker) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Cookie banner otomatik reddetme (CookieConsentBlocker)
+// 2. Consent-O-Matic Otomatik Çerez İzin Reddedicisi (CookieConsentBlocker)
 // ---------------------------------------------------------------------------
 
 const CONSENT_HIDE_CSS = `
@@ -965,15 +1013,21 @@ const CONSENT_HIDE_CSS = `
   #BorlabsCookieBox, #BorlabsCookieWidget,
   .cmplz-cookiebanner, #cmplz-cookiebanner-container,
   #hs-eu-cookie-confirmation,
-  [aria-label="cookieconsent"], [data-testid="cookie-policy-manage-dialog"] {
+  [aria-label="cookieconsent"], [data-testid="cookie-policy-manage-dialog"],
+  [class*="cookie-banner" i], [class*="cookie-notice" i], [class*="cookie-consent" i],
+  [id*="cookie-banner" i], [id*="cookie-notice" i], [id*="cookie-consent" i],
+  [class*="cookieconsent" i], [id*="cookieconsent" i], [class*="cookiebar" i], [id*="cookiebar" i] {
     display: none !important;
     visibility: hidden !important;
   }
 `;
 
-// "Reddet / yalnızca gerekli" düğmesi metin kalıpları (TR + EN).
+// "Reddet / yalnızca gerekli" düğmesi metin kalıpları (TR, EN, DE, FR, ES, IT, NL, RU).
 const REJECT_PATTERNS =
-  /^(reddet|tümünü reddet|hepsini reddet|tüm çerezleri reddet|çerezleri reddet|reddediyorum|kabul etmiyorum|kabul etme|kabul etmeden devam et?|vazgeç ve devam et|reject all( cookies)?|reject( cookies)?|decline( all)?|refuse( all)?|deny( all)?|only (strictly )?necessary|necessary (cookies )?only|use necessary cookies only|sadece gerekli( çerezler)?|yalnızca gerekli( çerezler)?|zorunlu çerezler(e izin ver)?|disagree|do not (accept|consent)|continue without (accepting|agreeing)|i do not accept)$/i;
+  /^(reddet|tümünü reddet|hepsini reddet|tüm çerezleri reddet|çerezleri reddet|reddediyorum|kabul etmiyorum|kabul etme|kabul etmeden devam et?|vazgeç ve devam et|sadece gerekli( çerezler)?|yalnızca gerekli( çerezler)?|zorunlu çerezler(e izin ver)?|reject all( cookies)?|reject( cookies)?|decline( all)?|refuse( all)?|deny( all)?|only (strictly )?necessary|necessary (cookies )?only|use necessary cookies only|disagree|do not (accept|consent)|continue without (accepting|agreeing)|i do not accept|alle ablehnen|nur notwendige( cookies)?|ablehnen|refuser tout|continuer sans accepter|tout refuser|refuser|rechazar todo|solo necesarias|rechazar|rifiuta tutti|solo necessari|rifiuta|alleen noodzakelijk|alles weigeren|weigeren|отклонить все|только обязательные|отклонить)$/i;
+
+const DISMISS_PATTERNS =
+  /^(got it|understood|i understand|anladım|kapat|tamam|ok|dismiss|i agree|agree|accept & close|kabul et ve kapat|close|devam et|tamamdır)$/i;
 
 const REJECT_SELECTORS = [
   '#onetrust-reject-all-handler',
@@ -993,6 +1047,15 @@ const REJECT_SELECTORS = [
   '[data-hook="consent-banner-decline-button"]',
   'button[data-role="reject"]',
   'button[data-action="reject"]',
+  'button[id*="reject"]',
+  'button[class*="reject"]',
+  'button[id*="decline"]',
+  'button[class*="decline"]',
+  'button[id*="refuse"]',
+  'button[class*="refuse"]',
+  '[aria-label*="reject" i]',
+  '[aria-label*="reddet" i]',
+  '[aria-label*="decline" i]',
 ];
 
 /** Shadow DOM dahil buton toplayıcı (Usercentrics vb. shadow root kullanır). */
@@ -1011,11 +1074,98 @@ function isVisibleEl(el: HTMLElement): boolean {
   return r.width > 0 && r.height > 0;
 }
 
+function clickSafe(el: HTMLElement): void {
+  try {
+    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    el.click();
+    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  } catch {
+    try { el.click(); } catch (_) {}
+  }
+}
+
+function tryProgrammaticCMP(): boolean {
+  try {
+    const w = window as any;
+    // 1. TCF v2 API
+    if (typeof w.__tcfapi === 'function') {
+      try {
+        w.__tcfapi('setConsent', 2, () => {}, {
+          purpose: { consents: {}, legitimateInterests: {} },
+          vendor: { consents: {}, legitimateInterests: {} },
+          specialFeatureOptins: {}
+        });
+      } catch (_) {}
+    }
+    // 2. OneTrust API
+    if (w.OneTrust && typeof w.OneTrust.RejectAll === 'function') {
+      w.OneTrust.RejectAll();
+      return true;
+    }
+    if (w.Optanon && typeof w.Optanon.RejectAll === 'function') {
+      w.Optanon.RejectAll();
+      return true;
+    }
+    // 3. Cookiebot API
+    if (w.Cookiebot && w.Cookiebot.dialog && typeof w.Cookiebot.dialog.submitConsent === 'function') {
+      w.Cookiebot.dialog.submitConsent(false);
+      return true;
+    }
+    // 4. Didomi API
+    if (w.Didomi && typeof w.Didomi.setUserStatus === 'function') {
+      w.Didomi.setUserStatus({ purp: { enabled: [], disabled: ['*'] } });
+      return true;
+    }
+    // 5. Usercentrics API
+    if (w.UC_UI && typeof w.UC_UI.denyAllConsents === 'function') {
+      w.UC_UI.denyAllConsents();
+      return true;
+    }
+    // 6. Klaro API
+    if (w.klaro && typeof w.klaro.saveAndApply === 'function') {
+      w.klaro.saveAndApply(false);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function hideGenericFloatingCookieBanners(root: ParentNode): boolean {
+  let matched = false;
+  try {
+    const elements = Array.from(root.querySelectorAll('div, section, aside, footer')) as HTMLElement[];
+    for (const el of elements) {
+      const text = (el.innerText || el.textContent || '').trim();
+      if (text.length > 15 && text.length < 600 && /cookies?|çerezler?|privacy policy|gizlilik politikası/i.test(text)) {
+        const style = window.getComputedStyle(el);
+        if (style.position === 'fixed' || style.position === 'sticky') {
+          const btns = Array.from(el.querySelectorAll('button, [role="button"], a, input[type="button"]')) as HTMLElement[];
+          for (const btn of btns) {
+            const bText = (btn.textContent || '').trim().replace(/\s+/g, ' ');
+            if (bText.length > 0 && bText.length < 30 && (REJECT_PATTERNS.test(bText) || DISMISS_PATTERNS.test(bText))) {
+              clickSafe(btn);
+              matched = true;
+              break;
+            }
+          }
+          el.style.setProperty('display', 'none', 'important');
+          matched = true;
+        }
+      }
+    }
+  } catch (_) {}
+  return matched;
+}
+
 function tryRejectConsent(root: ParentNode): boolean {
+  if (tryProgrammaticCMP()) return true;
+
   for (const sel of REJECT_SELECTORS) {
     const btn = root.querySelector<HTMLElement>(sel);
     if (btn && isVisibleEl(btn)) {
-      btn.click();
+      clickSafe(btn);
       return true;
     }
   }
@@ -1024,8 +1174,21 @@ function tryRejectConsent(root: ParentNode): boolean {
   for (const btn of buttons) {
     const text = (btn.textContent ?? '').trim().replace(/\s+/g, ' ');
     if (text.length > 0 && text.length < 48 && REJECT_PATTERNS.test(text) && isVisibleEl(btn)) {
-      btn.click();
+      clickSafe(btn);
       return true;
+    }
+  }
+  if (hideGenericFloatingCookieBanners(root)) {
+    return true;
+  }
+  for (const btn of buttons) {
+    const text = (btn.textContent ?? '').trim().replace(/\s+/g, ' ');
+    if (text.length > 0 && text.length < 30 && DISMISS_PATTERNS.test(text) && isVisibleEl(btn)) {
+      const containerText = btn.parentElement?.textContent || '';
+      if (/cookies?|çerez/i.test(containerText)) {
+        clickSafe(btn);
+        return true;
+      }
     }
   }
   return false;
@@ -1040,8 +1203,13 @@ if (config.cookieBannerAutoReject) {
       document.documentElement.appendChild(style);
     }
 
-    // Geç yüklenen banner'lar (CMP scripti sayfadan saniyeler sonra gelir):
-    // 1) İlk 30 sn periyodik dene, 2) DOM değişiminde debounce'lu dene.
+    // Body scroll lock temizliği (bazı CMP'ler sayfayı kilitler)
+    try {
+      if (document.body && document.body.style.overflow === 'hidden') {
+        document.body.style.overflow = 'auto';
+      }
+    } catch (_) {}
+
     let done = false;
     let attempts = 0;
     const attempt = () => {
@@ -1067,7 +1235,6 @@ if (config.cookieBannerAutoReject) {
 
     const cleanup = () => {
       clearInterval(timer);
-      // Gözlemciyi bir süre daha açık tut — bazı CMP'ler ikinci katman gösterir
       setTimeout(() => mo.disconnect(), 15_000);
     };
   };

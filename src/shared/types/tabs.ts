@@ -55,6 +55,8 @@ export interface Workspace {
   id: ID;
   name: string;
   color: TabGroupColor;
+  icon?: string;
+  order?: number;
   createdAt: number;
 }
 

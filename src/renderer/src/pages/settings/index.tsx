@@ -234,6 +234,12 @@ export default function SettingsPage() {
             </select>
           </div>
         </Row>
+        <Row label="Ambient Webflow (Ambilight ambiyans çerçeve ışığı)">
+          <Switch
+            checked={settings.general.ambientWebflow ?? true}
+            onCheckedChange={(v) => updateGeneral('ambientWebflow', v)}
+          />
+        </Row>
         <Row label="Zorla koyu tema (siteler)">
           <Switch
             checked={settings.general.forceDarkMode}
@@ -886,7 +892,7 @@ function BackupSection() {
 }
 
 function UpdaterSection() {
-  const [appVersion, setAppVersion] = useState<string>('v1.0.4');
+  const [appVersion, setAppVersion] = useState<string>('v2.0.1');
   const [status, setStatus] = useState<
     'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error'
   >('idle');

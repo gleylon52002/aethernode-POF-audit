@@ -12,6 +12,7 @@ import {
   HistoryIcon,
   GaugeIcon,
   WavesIcon,
+  LayersIcon,
 } from '@renderer/components/ui/icons';
 import { Tooltip } from '@renderer/components/ui';
 import { useTabs } from '@renderer/store/tabs';
@@ -33,6 +34,7 @@ interface Item {
 
 const items: Item[] = [
   { route: 'dashboard', label: 'Ana Sayfa', icon: Home },
+  { route: 'workspaces', label: 'Çalışma Alanları (Workspaces 2.0)', icon: LayersIcon },
   { route: 'security', label: 'Güvenlik Merkezi', icon: Security },
   { route: 'security-lab', label: 'Güvenlik Lab', icon: SecurityLab },
   { route: 'privacy', label: 'Gizlilik', icon: PrivacyIcon },
@@ -42,7 +44,7 @@ const items: Item[] = [
   { route: 'history', label: 'Geçmiş', icon: HistoryIcon },
   { route: 'downloads', label: 'İndirilenler', icon: Download },
   { route: 'passwords', label: 'Şifreler', icon: Key },
-  { route: 'notes', label: 'Güvenli Notlar', icon: Note },
+  { route: 'notes', label: 'Güvenli Notlar (Mini Obsidian)', icon: Note },
   { route: 'settings', label: 'Ayarlar', icon: SettingsIcon },
   { route: 'help', label: 'Kullanım & Bilgi', icon: Note },
 ];

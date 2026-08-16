@@ -139,10 +139,130 @@ function isAllowlisted(hostname: string): boolean {
   return false;
 }
 
+// ---------------------------------------------------------------------------
+// Reverse Domain Trie & Fast Bloom Filter Engine
+// ---------------------------------------------------------------------------
+
+interface TrieNode {
+  children?: Map<string, TrieNode>;
+  isWildcard?: boolean; // Matches this domain and all subdomains (e.g. *.doubleclick.net)
+  isExact?: boolean;
+}
+
+class DomainTrie {
+  private root: TrieNode = {};
+  public size = 0;
+
+  public insert(domain: string, isWildcard = true): void {
+    let clean = domain.toLowerCase().trim();
+    if (clean.startsWith('*.')) clean = clean.slice(2);
+    if (clean.endsWith('.')) clean = clean.slice(0, -1);
+    if (!clean) return;
+
+    const labels = clean.split('.').reverse();
+    let curr = this.root;
+
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i]!;
+      if (!curr.children) curr.children = new Map();
+      let next = curr.children.get(label);
+      if (!next) {
+        next = {};
+        curr.children.set(label, next);
+      }
+      curr = next;
+    }
+
+    if (isWildcard) curr.isWildcard = true;
+    else curr.isExact = true;
+    this.size++;
+  }
+
+  public matches(hostname: string): boolean {
+    if (!hostname) return false;
+    let clean = hostname.toLowerCase();
+    if (clean.endsWith('.')) clean = clean.slice(0, -1);
+
+    const labels = clean.split('.').reverse();
+    let curr = this.root;
+
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i]!;
+      if (!curr.children) return false;
+      const next = curr.children.get(label);
+      if (!next) return false;
+      // If this prefix level matches a wildcard rule, all subdomains are blocked
+      if (next.isWildcard) return true;
+      curr = next;
+    }
+
+    return !!curr.isExact || !!curr.isWildcard;
+  }
+
+  public clear(): void {
+    this.root = {};
+    this.size = 0;
+  }
+}
+
+// 64KB fast bitset bloom filter for nanosecond pre-rejection of clean domains
+class FastDomainBloom {
+  private bits = new Uint32Array(16384); // 64KB = 524,288 bits
+
+  private hash1(str: string): number {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0) % 524288;
+  }
+
+  private hash2(str: string): number {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+    }
+    return h % 524288;
+  }
+
+  public add(domain: string): void {
+    const h1 = this.hash1(domain);
+    const h2 = this.hash2(domain);
+    this.bits[h1 >>> 5]! |= 1 << (h1 & 31);
+    this.bits[h2 >>> 5]! |= 1 << (h2 & 31);
+  }
+
+  public mightContain(domain: string): boolean {
+    const h1 = this.hash1(domain);
+    const h2 = this.hash2(domain);
+    const b1 = (this.bits[h1 >>> 5]! & (1 << (h1 & 31))) !== 0;
+    const b2 = (this.bits[h2 >>> 5]! & (1 << (h2 & 31))) !== 0;
+    return b1 && b2;
+  }
+
+  public clear(): void {
+    this.bits.fill(0);
+  }
+}
+
+let dynamicTrie = new DomainTrie();
+let dynamicBloom = new FastDomainBloom();
 let dynamicSet = new Set<string>(SEED_AD_DOMAINS);
 let lastUpdatedAt = 0;
 let updateTimer: NodeJS.Timeout | null = null;
 let updating = false;
+
+function rebuildTrieAndBloom(domains: Set<string>): void {
+  const trie = new DomainTrie();
+  const bloom = new FastDomainBloom();
+  for (const d of domains) {
+    trie.insert(d, true);
+    bloom.add(d);
+  }
+  dynamicTrie = trie;
+  dynamicBloom = bloom;
+}
 
 function cacheDir(): string {
   const dir = join(app.getPath('userData'), 'filter-cache');
@@ -159,6 +279,9 @@ function metaFile(): string {
 }
 
 function matchesSet(hostname: string, set: Set<string>): boolean {
+  if (dynamicTrie.size > 0 && set === dynamicSet) {
+    return dynamicTrie.matches(hostname);
+  }
   let host = hostname.toLowerCase();
   if (host.endsWith('.')) host = host.slice(0, -1);
   while (host.length > 0) {
@@ -175,12 +298,12 @@ export function isFilterBlocked(hostname: string): boolean {
   if (isAllowlisted(hostname)) return false;
   // İlk 5 sn: dinamik cache henüz yüklenmediyse statik blocklist fallback (boot koruması)
   if (lastUpdatedAt === 0 && isStaticBlocked(hostname)) return true;
-  return matchesSet(hostname, dynamicSet);
+  // Hızlı Bloom Filter negatif ön elemesi: Temiz domain'ler için 0ns anında geçiş
+  if (dynamicTrie.size > 1000 && !dynamicBloom.mightContain(hostname)) return false;
+  return dynamicTrie.matches(hostname);
 }
 
 // Yüksek güvenilirlikli set — el ile derlenmiş reklam ağları.
-// Video player iframe'leri / medya akışları YALNIZCA bu setten engellenir;
-// devasa dinamik listeler (easylist vb.) gömülü oynatıcıları kırabiliyor.
 const seedSet = new Set<string>(SEED_AD_DOMAINS);
 
 /**
@@ -313,13 +436,14 @@ function loadCacheFromDisk(): void {
     }
     if (next.size > 1000) {
       dynamicSet = next;
+      rebuildTrieAndBloom(dynamicSet);
       try {
         const meta = JSON.parse(readFileSync(metaFile(), 'utf8')) as { lastUpdatedAt?: number };
         lastUpdatedAt = meta.lastUpdatedAt ?? 0;
       } catch {
         lastUpdatedAt = 0;
       }
-      logger.info('Filtre önbelleği yüklendi', { domains: dynamicSet.size, ver: CACHE_VERSION });
+      logger.info('Filtre önbelleği yüklendi (Trie & Bloom aktif)', { domains: dynamicSet.size, ver: CACHE_VERSION });
     }
   } catch (err) {
     logger.warn('Filtre önbelleği okunamadı', { err: String(err) });
@@ -388,9 +512,10 @@ export async function updateFilterLists(force = false): Promise<{ ok: boolean; d
     }
 
     dynamicSet = merged;
+    rebuildTrieAndBloom(dynamicSet);
     lastUpdatedAt = Date.now();
     saveCacheWithHashes(merged, hashes);
-    logger.info('Filtre ağı güncellendi', { domains: merged.size, hashes });
+    logger.info('Filtre ağı güncellendi (Trie & Bloom aktif)', { domains: merged.size, hashes });
     return { ok: true, domains: merged.size };
   } finally {
     updating = false;
@@ -413,6 +538,7 @@ export function enableFilterEngine(): void {
   for (const d of SEED_AD_DOMAINS) {
     if (!isAllowlisted(d)) dynamicSet.add(d);
   }
+  rebuildTrieAndBloom(dynamicSet);
   // v2 geçişi: zorla bir kez güncelle
   void updateFilterLists(true).catch((err) =>
     logger.warn('İlk filtre güncellemesi başarısız', { err: String(err) }),

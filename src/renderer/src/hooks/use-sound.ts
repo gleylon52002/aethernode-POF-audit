@@ -35,138 +35,160 @@ function shouldPlay(): boolean {
   return true;
 }
 
-// ── Sound presets — kolay ince ayar için sabitler ──────────────────
-export const SOUND_PRESETS = {
-  tabOpen: { from: 400, to: 620, durationMs: 110, type: 'triangle' as OscillatorType, attackMs: 6, decayMs: 70, extraHarmonics: true },
-  tabClose: { from: 620, to: 340, durationMs: 85, type: 'triangle' as OscillatorType, attackMs: 4, decayMs: 55, extraHarmonics: true },
-  primaryClick: { freq: 740, durationMs: 55, type: 'sine' as OscillatorType, attackMs: 2, decayMs: 35 },
-  sidebarNav: { freq: 880, durationMs: 55, type: 'sine' as OscillatorType, attackMs: 1, decayMs: 30 },
-  downloadDone: { freq: 660, durationMs: 90, type: 'sine' as OscillatorType, attackMs: 2, decayMs: 60 },
-} as const;
-
-function playTone(
-  freq: number,
+/**
+ * Organik, ASMR dokulu akustik mikro-tıklama (Apple Trackpad / Tactile Switch hissi)
+ * BiquadFilter (Low-pass + Q rezonansı) ile kulağı tırmalayan yüksek frekanslar filtrelenir.
+ */
+function playAcousticTap(
+  startFreq: number,
+  endFreq: number,
   durationMs: number,
-  type: OscillatorType,
   volume: number,
-  attackMs = 2,
-  decayMs = 40,
+  filterCutoff = 2400,
 ) {
-  let ac: AudioContext | null = null;
-  try {
-    ac = getCtx();
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn('[sound] AudioContext init failed', e);
-    return;
-  }
+  const ac = getCtx();
   if (!ac) return;
 
   const doPlay = () => {
     try {
-      if (!ac) return;
-      if (ac.state === 'suspended') {
-        ac.resume()
-          .then(() => { if (ac && ac.state === 'running') doPlay(); })
-          .catch(() => {});
-        return;
-      }
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
+      if (!ac || ac.state !== 'running') return;
       const now = ac.currentTime;
       const dur = durationMs / 1000;
-      const atk = attackMs / 1000;
-      const dec = decayMs / 1000;
-      // ADSR benzeri: hızlı attack, yumuşak decay + kısa reverb kuyruk fade
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      const filter = ac.createBiquadFilter();
+
+      // Sıcak akustik gövde filtresi
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(filterCutoff, now);
+      filter.frequency.exponentialRampToValueAtTime(filterCutoff * 0.4, now + dur);
+      filter.Q.value = 1.8;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + dur * 0.85);
+
+      // Ultra-hızlı attack (1ms), tatmin edici yumuşak sönümlenme
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(volume, now + atk);
-      // tepe sonrası yumuşak düşüş
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume * 0.22), now + atk + dec * 0.55);
-      // reverb kuyruğu — exponential fade-out
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      osc.connect(gain).connect(ac.destination);
+      gain.gain.linearRampToValueAtTime(volume, now + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+
       osc.start(now);
-      osc.stop(now + dur + 0.015);
+      osc.stop(now + dur + 0.01);
+
       setTimeout(() => {
-        try { osc.disconnect(); gain.disconnect(); } catch {}
-      }, durationMs + 80);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[sound] playTone failed', e);
-    }
+        try {
+          osc.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        } catch {}
+      }, durationMs + 60);
+    } catch {}
   };
+
   if (ac.state === 'suspended') ac.resume().then(() => doPlay()).catch(() => doPlay());
   else doPlay();
 }
 
-/** Yükselen/alçalan frekans slide ile — daha doğal */
-function playSlideTone(
-  from: number,
-  to: number,
-  durationMs: number,
-  type: OscillatorType,
-  volume: number,
-  attackMs = 6,
-  decayMs = 60,
-  extraHarmonics = false,
-) {
-  let ac: AudioContext | null = null;
-  try { ac = getCtx(); } catch { return; }
+/**
+ * Huzurlu akor ve uyumlu tonlar (Açılış, indirme tamamlandı gibi pozitif eylemler)
+ */
+function playHarmonicChime(notes: number[], volume: number, noteSpacingMs = 45) {
+  const ac = getCtx();
+  if (!ac) return;
+
+  notes.forEach((freq, idx) => {
+    setTimeout(() => {
+      try {
+        if (!ac) return;
+        const now = ac.currentTime;
+        const dur = 0.18;
+
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        const filter = ac.createBiquadFilter();
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3200, now);
+        filter.Q.value = 1.2;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(volume, now + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ac.destination);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+
+        setTimeout(() => {
+          try {
+            osc.disconnect();
+            filter.disconnect();
+            gain.disconnect();
+          } catch {}
+        }, 220);
+      } catch {}
+    }, idx * noteSpacingMs);
+  });
+}
+
+/**
+ * Sekme Kapatma için yumuşak, organik "baloncuk/pıt" sesi
+ */
+function playSoftBubble(volume: number) {
+  const ac = getCtx();
   if (!ac) return;
 
   const doPlay = () => {
     try {
-      if (!ac) return;
-      if (ac.state === 'suspended') {
-        ac.resume().then(() => { if (ac && ac.state === 'running') doPlay(); }).catch(() => {});
-        return;
-      }
+      if (!ac || ac.state !== 'running') return;
       const now = ac.currentTime;
-      const dur = durationMs / 1000;
-      const atk = attackMs / 1000;
-      const dec = decayMs / 1000;
+      const dur = 0.075;
 
-      // Ana oscillator
-      const osc = ac!.createOscillator();
-      const gain = ac!.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(from, now);
-      osc.frequency.exponentialRampToValueAtTime(to, now + dur * 0.85);
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      const filter = ac.createBiquadFilter();
 
-      // Hafif ikinci harmonik (sıcaklık katmak için) — çok düşük volüm
-      let osc2: OscillatorNode | null = null;
-      let gain2: GainNode | null = null;
-      if (extraHarmonics) {
-        osc2 = ac!.createOscillator();
-        gain2 = ac!.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(from * 1.5, now);
-        osc2.frequency.exponentialRampToValueAtTime(to * 1.5, now + dur * 0.85);
-        gain2.gain.setValueAtTime(0.0001, now);
-        gain2.gain.linearRampToValueAtTime(volume * 0.12, now + atk);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.015);
-        osc2.connect(gain2).connect(ac!.destination);
-        osc2.start(now);
-        osc2.stop(now + dur + 0.015);
-        setTimeout(() => { try { osc2!.disconnect(); gain2!.disconnect(); } catch {} }, durationMs + 80);
-      }
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1800, now);
+      filter.Q.value = 2.2;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + dur);
 
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(volume, now + atk);
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume * 0.18), now + atk + dec * 0.6);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.015);
+      gain.gain.linearRampToValueAtTime(volume, now + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-      osc.connect(gain).connect(ac!.destination);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+
       osc.start(now);
-      osc.stop(now + dur + 0.015);
-      setTimeout(() => { try { osc.disconnect(); gain.disconnect(); } catch {} }, durationMs + 80);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[sound] playSlideTone failed', e);
-    }
+      osc.stop(now + dur + 0.01);
+
+      setTimeout(() => {
+        try {
+          osc.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        } catch {}
+      }, 90);
+    } catch {}
   };
+
   if (ac.state === 'suspended') ac.resume().then(() => doPlay()).catch(() => doPlay());
   else doPlay();
 }
@@ -178,31 +200,31 @@ export function playUiSound(action: UiSoundAction) {
   const vol = useSettings.getState().settings.general.soundEffectsVolume ?? 0.3;
   const v = Math.max(0, Math.min(1, vol));
   if (v <= 0.001) return;
+
   switch (action) {
     case 'tabOpen': {
-      const p = SOUND_PRESETS.tabOpen;
-      playSlideTone(p.from, p.to, p.durationMs, p.type, v * 0.24, p.attackMs, p.decayMs, p.extraHarmonics);
+      // Ferah, tatlı yükselen ikili akor (C5 -> G5)
+      playHarmonicChime([523.25, 783.99], v * 0.18, 30);
       break;
     }
     case 'tabClose': {
-      const p = SOUND_PRESETS.tabClose;
-      playSlideTone(p.from, p.to, p.durationMs, p.type, v * 0.20, p.attackMs, p.decayMs, p.extraHarmonics);
+      // Doyurucu, yumuşak mikro baloncuk pıt sesi
+      playSoftBubble(v * 0.22);
       break;
     }
     case 'primaryClick': {
-      const p = SOUND_PRESETS.primaryClick;
-      playTone(p.freq, p.durationMs, p.type, v * 0.16, p.attackMs, p.decayMs);
+      // Apple Trackpad / mekanik switch mikro tık
+      playAcousticTap(1050, 480, 22, v * 0.20, 2600);
       break;
     }
     case 'sidebarNav': {
-      const p = SOUND_PRESETS.sidebarNav;
-      playTone(p.freq, p.durationMs, p.type, v * 0.13, p.attackMs, p.decayMs);
+      // Kadife yumuşaklığında ahşap/cam menü geçiş tıkı
+      playAcousticTap(740, 360, 16, v * 0.15, 2000);
       break;
     }
     case 'downloadDone': {
-      const p = SOUND_PRESETS.downloadDone;
-      playTone(p.freq, p.durationMs, p.type, v * 0.2, p.attackMs, p.decayMs);
-      setTimeout(() => playTone(880, 90, 'sine', v * 0.18, 2, 60), 90);
+      // Zarif, kutlama hissi veren majör üçlü arpej (D5 -> F#5 -> A5)
+      playHarmonicChime([587.33, 739.99, 880.0], v * 0.22, 55);
       break;
     }
   }

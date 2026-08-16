@@ -13,6 +13,8 @@ export interface FingerprintConfig {
   enabled: boolean;
   mode: FingerprintMode;
   spoofCanvas: boolean;
+  canvasFarbling?: boolean;
+  letterboxing?: boolean;
   spoofWebGL: boolean;
   spoofAudio: boolean;
   spoofFonts: boolean;

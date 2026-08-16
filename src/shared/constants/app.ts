@@ -3,7 +3,7 @@ export const APP = {
   name: 'AetherNode POF',
   shortName: 'AetherNode',
   appId: 'com.aethernode.browser',
-  version: '1.0.3',
+  version: '2.0.1',
 } as const;
 
 // Renderer'ın yüklendiği Vite dev sunucu adresi (geliştirme).

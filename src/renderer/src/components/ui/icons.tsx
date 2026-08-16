@@ -51,6 +51,7 @@ import {
   Pause as LPause,
   Check as LCheck,
   Copy as LCopy,
+  Layers as LLayers,
   type LucideProps,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
@@ -113,3 +114,4 @@ export const PlayIcon = wrap(LPlay);
 export const PauseIcon = wrap(LPause);
 export const Check = wrap(LCheck);
 export const Copy = wrap(LCopy);
+export const LayersIcon = wrap(LLayers);

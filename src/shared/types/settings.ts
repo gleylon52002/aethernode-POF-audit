@@ -44,6 +44,8 @@ export interface AppSettings {
     /** Sabit duvar kağıdı indeksi (null = rastgele) */
     pinnedWallpaper: number | null;
     accentTheme: AccentTheme;
+    /** Ambient Webflow (Ambilight) sinematik çerçeve ışığı */
+    ambientWebflow: boolean;
     /** UI ses efektleri açık mı (varsayılan kapalı) */
     soundEffectsEnabled: boolean;
     /** UI ses seviyesi 0-1 */
@@ -123,6 +125,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     bookmarksBarVisible: true,
     pinnedWallpaper: null,
     accentTheme: 'purple',
+    ambientWebflow: true,
     soundEffectsEnabled: false,
     soundEffectsVolume: 0.3,
     hasSeenWelcomeTour: false,
@@ -147,6 +150,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
       enabled: true,
       mode: 'uniformity',
       spoofCanvas: true,
+      canvasFarbling: true,
+      letterboxing: true,
       spoofWebGL: true,
       spoofAudio: true,
       spoofFonts: true,

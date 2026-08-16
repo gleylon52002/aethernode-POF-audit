@@ -26,8 +26,14 @@ export function registerNotesHandlers(): void {
 
   defineHandler({
     channel: IPC.notes.add,
-    schema: z.object({ title: z.string().min(1), body: z.string() }),
-    handle: async ({ title, body }): Promise<SecureNote> => addNote({ title, body } as NoteInput),
+    schema: z.object({
+      title: z.string().min(1),
+      body: z.string(),
+      sourceUrl: z.string().optional(),
+      sourceTitle: z.string().optional(),
+      links: z.array(z.string()).optional(),
+    }),
+    handle: async (input): Promise<SecureNote> => addNote(input as NoteInput),
   });
 
   defineHandler({
@@ -39,14 +45,20 @@ export function registerNotesHandlers(): void {
       pinned: z.boolean().optional(),
       color: z.enum(['default', 'purple', 'blue', 'emerald', 'amber', 'rose']).optional(),
       tags: z.array(z.string().max(24)).max(10).optional(),
+      links: z.array(z.string()).optional(),
+      sourceUrl: z.string().optional(),
+      sourceTitle: z.string().optional(),
     }),
-    handle: async ({ id, title, body, pinned, color, tags }): Promise<SecureNote> => {
+    handle: async ({ id, title, body, pinned, color, tags, links, sourceUrl, sourceTitle }): Promise<SecureNote> => {
       const patch: NotePatch = {};
       if (title !== undefined) patch.title = title;
       if (body !== undefined) patch.body = body;
       if (pinned !== undefined) patch.pinned = pinned;
       if (color !== undefined) patch.color = color as NotePatch['color'];
       if (tags !== undefined) patch.tags = tags;
+      if (links !== undefined) patch.links = links;
+      if (sourceUrl !== undefined) patch.sourceUrl = sourceUrl;
+      if (sourceTitle !== undefined) patch.sourceTitle = sourceTitle;
       return updateNote(id, patch);
     },
   });
