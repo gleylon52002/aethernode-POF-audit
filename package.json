@@ -15,7 +15,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "dist": "vite build && electron-builder",
     "dist:win": "vite build && electron-builder --win --x64",
-    "dist:secure": "vite build && electron-builder --win --x64"
+    "dist:secure": "vite build && electron-builder --win --x64",
+    "deploy": "node scripts/deploy-release.mjs",
+    "release": "npm run dist:win && node scripts/deploy-release.mjs"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
